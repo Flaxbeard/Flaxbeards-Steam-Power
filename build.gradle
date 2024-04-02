@@ -1,189 +1,111 @@
-import org.ajoberstar.grgit.Grgit
-
-import java.nio.file.Files
-import java.nio.file.Paths
-import groovy.json.JsonSlurper
-import groovy.json.JsonOutput
-
-buildscript {
-    repositories {
-        mavenCentral()
-        maven {
-            name = "forge"
-            url = "http://files.minecraftforge.net/maven"
-        }
-
-        maven {
-            name = "sonatype"
-            url = "https://oss.sonatype.org/content/repositories/snapshots/"
-        }
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
-        classpath 'org.ajoberstar:grgit:1.1.0'
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7'
-    }
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.0.97'
+    id 'net.neoforged.gradle.mixin' version '7.0.97'
 }
 
-apply plugin: 'net.minecraftforge.gradle.forge'
-apply plugin: 'java'
-apply plugin: 'com.jfrog.bintray'
-apply plugin: 'maven-publish'
-
-version = newModVersion + '-api' + newAPIVersion
-
-/*
-Usage: `gradle build -Palpha=<version>` where <version> is the next version (different from newModVersion because
-that is updated when we are releasing an actual public update. Modifying that makes reading commit history much more
-confusing). It increments the .alphaversion file's first line at the end, so it can be thought of as "the next alpha version".
-
-Example: `gradle build -Palpha=1.0.0 -Pdev` => version # 1.0.0-alpha1-<commit>
-*/
-static def incrementAlphaVersion(int currentValue) {
-    def file = new File('.alphaversion')
-    file.newWriter()
-    file << "${currentValue + 1}"
+def stdout = new ByteArrayOutputStream()
+exec {
+    commandLine 'git', 'rev-parse', '--short', 'HEAD'
+    standardOutput = stdout
 }
+def commit = stdout.toString().replace("\n", "").replace("\r", "").trim()
 
-def getAlphaVersion() {
-    if (!Files.exists(Paths.get('.alphaversion'))) {
-        new File('.alphaversion').createNewFile()
-        incrementAlphaVersion(0)
-    }
-    new File('.alphaversion').withReader { return it.readLine() }
-}
-
-int alpha = getAlphaVersion().toInteger()
-
-if (project.hasProperty('alpha')) {
-    version = project.property('alpha') + "-alpha" + alpha
-}
-
-if (project.hasProperty('dev')) {
-    def git = Grgit.open(dir: '.')
-    project.version += '-' + git.head().getAbbreviatedId(6)
-}
-
-task finalize << {
-    if (project.hasProperty('alpha')) {
-        incrementAlphaVersion(alpha)
-    }
-
-    // This file is genereated by processResources before getting put into the jar.
-    new File('./mcmod.info').delete()
-}
-
-build.finalizedBy(finalize)
-
-group = "eiteam.esteemedinnovation"
-archivesBaseName = "EsteemedInnovation-1.12"
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-minecraft {
-    version = project.forgeVersion
-    mappings = project.mcpMappings
-    runDir = "eclipse"
-    replace "@VERSION@", newModVersion
-    replace "@APIVERSION@", newAPIVersion
-}
+version = project.hasProperty("dev") ? commit : mod_version
 
 repositories {
-    maven {
-        name = "ic2"
-        url = "http://maven.ic2.player.to/"
+    mavenLocal()
+}
+
+base {
+    archivesName = project.projectDir.name + "-mc${minecraft_version}-api${api_version}"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+runs {
+    configureEach {
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+
+        modSource project.sourceSets.main
     }
 
-    // Used for Mantle, Natura, Tinkers' Construct, and JEI.
-    maven {
-        name "progwml6"
-        url "http://dvs1.progwml6.com/files/maven"
+    client {
+        systemProperty 'forge.enabledGameTestNamespaces', 'esteemedinnovation'
     }
 
-    maven {
-        name "tterrag Repo"
-        url "http://maven.tterrag.com"
+    server {
+        systemProperty 'forge.enabledGameTestNamespaces', 'esteemedinnovation'
+        programArgument '--nogui'
     }
 
-    maven {
-        name = "The CB Project"
-        url "http://chickenbones.net/maven"
+    gameTestServer {
+        systemProperty 'forge.enabledGameTestNamespaces', 'esteemedinnovation'
     }
 
-    maven {
-        url "http://tehnut.info/maven"
+    data {
+        programArguments.addAll '--mod', 'esteemedinnovation', '--all', '--output', file('src/generated/resources/').getAbsolutePath(),
+                '--existing', file('src/main/resources/').getAbsolutePath()
     }
+}
 
-    // url of the maven that hosts Enchiridions files
-    maven {
-        url "http://girafi.dk/maven/"
+sourceSets {
+    main {
+        resources {
+            srcDirs += 'src/generated/resources'
+        }
     }
-
-    maven {
-        name = "Jared"
-        url = "http://maven.blamejared.com/"
-    }
-
-    maven {
-        url = "https://minecraft.curseforge.com/api/maven/"
+    api {
+        java {
+            srcDirs += 'src/api/java'
+        }
+        resources {
+            srcDirs += 'src/api/resources'
+        }
     }
 }
 
 dependencies {
-    compile mantleVersion
-    compile ticVersion
-    compile naturaVersion
-    // compile ic2Version
-    compile jeiVersion
-    deobfCompile cclibVersion
-    compile wailaVersion
-    deobfCompile enchiridionVersion
-    compile craftTweaker2APIVersion
-    compile craftTweaker2Version
-    compile baublesVersion
-//    These are dependent on libs which do not compile successfully.
-//    compile eioVersion
-//    compile ecoreVersion
+    apiImplementation "net.neoforged:neoforge:${neoforge_version}"
+    implementation "net.neoforged:neoforge:${neoforge_version}"
+    implementation sourceSets.api.getOutput()
 
-    // Avoiding using the generic "lib".
-    compile fileTree(dir: 'eilib', include: '*.jar')
-
-    testCompile sourceSets.api.getOutput()
-    testCompile 'junit:junit:4.12'
+    testImplementation sourceSets.api.getOutput()
+    testImplementation 'junit:junit:4.12'
 }
 
-processResources {
-    // Combine the main and api mcmod.info files and replace their versions.
-    def slurper = new JsonSlurper()
+subsystems {
+    parchment {
+        minecraftVersion = parchment_mc_version
+        mappingsVersion = parchment_mappings_version
+    }
+}
 
-    def mainInfo = new File('src/main/resources/mcmod.info').text
-    def apiInfo = new File('src/api/resources/mcmod.info').text
-
-    def mainJson = slurper.parseText(mainInfo)
-    def apiJson = slurper.parseText(apiInfo)
-
-    mainJson[0].version = newModVersion
-    apiJson[0].version = newAPIVersion
-
-    def outputInfo = [
-            mainJson[0],
-            apiJson[0]
+tasks.withType(ProcessResources).configureEach {
+    var replaceProperties = [
+            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
+            neo_version: neoforge_version, neo_version_range: neoforge_version_range,
+            loader_version_range: loader_version_range,
+            mod_id: "esteemedinnovation",
+            mod_name: "Esteemed Innovation",
+            mod_license: "CC0",
+            mod_version: mod_version,
+            mod_authors: "Esteemed Innovation Team",
+            mod_description: "An innovative tech mod revolving around steam power and pressure.",
     ]
+    inputs.properties replaceProperties
 
-    new File('./mcmod.info').write(JsonOutput.toJson(outputInfo))
-
-    from 'mcmod.info'
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude 'mcmod.info'
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
     }
+}
 
-    from(sourceSets.api.resources.srcDirs) {
-        exclude 'mcmod.info'
-    }
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
 
 // TODO: Automate for when a new API package is built/published.
@@ -191,28 +113,19 @@ javadoc {
     source = sourceSets.api.allJava
     destinationDir = file('./docs/')
     options.memberLevel = JavadocMemberLevel.PRIVATE
-    title = 'Esteemed Innovation API version ' + newAPIVersion
+    title = 'Esteemed Innovation API version ' + api_version
 }
 
 task apiJar(type: Jar) {
-    version = newAPIVersion
-    classifier = 'api'
+    archiveVersion = api_version
+    archiveClassifier = 'api'
     from sourceSets.api.output
-    from(sourceSets.api.resources.srcDirs) {
-        include 'mcmod.info'
-        filter {
-            it.replaceAll('@APIVERSION@', newAPIVersion)
-        }
-    }
-
-    from(sourceSets.api.resources) {
-        exclude 'mcmod.info'
-    }
+    from sourceSets.api.resources
 }
 
 jar {
     dependsOn compileApiJava
-    from sourceSets.api.output.classesDir
+    from sourceSets.api.output
 }
 
 artifacts {
@@ -223,22 +136,6 @@ publishing {
     publications {
         apiPublication(MavenPublication) {
             artifact apiJar
-        }
-    }
-}
-
-bintray {
-    if (System.hasProperty('bintray_user') && System.hasProperty('bintray_key')) {
-        user = bintray_user
-        key = bintray_key
-        publications = ['apiPublication'] 
-        pkg {
-            repo = 'Esteemed-Innovation'
-            name = 'Releases'
-            userOrg = 'esteemed-innovation'
-            version {
-                name = project.version
-            }
         }
     }
 }
