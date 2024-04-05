@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.api.wrench;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Implement this interface on subclasses of Item to have the item work as pipe wrench.
@@ -13,5 +13,5 @@ public interface PipeWrench {
      * @param pos The position of the block being wrenched
      * @return true if wrenching is possible; false if not.
      */
-    boolean canWrench(EntityPlayer player, BlockPos pos);
+    boolean canWrench(Player player, BlockPos pos);
 }

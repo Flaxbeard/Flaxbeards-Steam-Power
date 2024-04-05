@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.transport.fluid.screw;
 
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.api.util.FluidHelper;
 import eiteam.esteemedinnovation.transport.TransportationModule;
 import net.minecraft.block.state.IBlockState;
@@ -10,6 +10,7 @@ import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
@@ -21,7 +22,7 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class TileEntityPump extends SteamTransporterTileEntity {
+public class TileEntityPump extends SteamTransporterBlockEntity {
     public FluidTank myTank = new FluidTank(1000);
     private final IFluidHandler inputHandler = new InputOnlyFluidHandler(myTank);
     private final IFluidHandler outputHandler = new OutputOnlyFluidHandler(myTank);
@@ -93,7 +94,7 @@ public class TileEntityPump extends SteamTransporterTileEntity {
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == TransportationModule.ARCHIMEDES_SCREW;
     }
 
@@ -106,7 +107,7 @@ public class TileEntityPump extends SteamTransporterTileEntity {
             }
         } else {
             EnumFacing inputDir = getInputDirection();
-            BlockPos offsetPos = getOffsetPos(inputDir);
+            BlockPos offsetPos = getRelativePos(inputDir);
             Fluid fluid = FluidHelper.getFluidFromBlockState(world.getBlockState(offsetPos));
             if (getSteamShare() >= STEAM_CONSUMPTION && myTank.getFluidAmount() == 0 && fluid != null &&
               myTank.getFluidAmount() < 1000) {
@@ -124,7 +125,7 @@ public class TileEntityPump extends SteamTransporterTileEntity {
                 rotateTicks++;
             }
             EnumFacing outputDir = getOutputDirection();
-            offsetPos = getOffsetPos(outputDir);
+            offsetPos = getRelativePos(outputDir);
             if (myTank.getFluidAmount() > 0 && progress == 100) {
                 TileEntity tile = world.getTileEntity(offsetPos);
                 if (tile != null) {

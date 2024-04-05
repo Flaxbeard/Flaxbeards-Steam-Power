@@ -1,93 +1,47 @@
 package eiteam.esteemedinnovation.api.steamnet;
 
-import eiteam.esteemedinnovation.api.steamnet.data.SteamNetworkData;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import eiteam.esteemedinnovation.api.Constants;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.TickEvent;
 
 import java.util.*;
 
+@Mod.EventBusSubscriber(value = Dist.DEDICATED_SERVER, modid = Constants.API_MODID)
 public class SteamNetworkRegistry {
-    private static boolean loaderRegistered = false;
-
-    private static SteamNetworkRegistry INSTANCE = new SteamNetworkRegistry();
-    private HashSet<Integer> initialized = new HashSet<>();
-
     /**
-     * Key: Dimension ID, Value: All networks in that dimension.
+     * Key: Dimension, Value: All networks in that dimension.
      */
-    private final HashMap<Integer, ArrayList<SteamNetwork>> networks = new HashMap<>();
-
-    public static SteamNetworkRegistry getInstance() {
-        return INSTANCE;
-    }
-
-    public static void initialize() {
-        if (!loaderRegistered) {
-            loaderRegistered = true;
-            MinecraftForge.EVENT_BUS.register(INSTANCE);
-        }
-    }
-
-    public static void markDirty(SteamNetwork network) {
-        World world = network.getWorld();
-        if (world != null) {
-            SteamNetworkData.get(world).markDirty();
-        }
-    }
-
-    public NBTTagCompound writeToNBT(NBTTagCompound nbt, int dimID) {
-        return nbt;
-    }
-
-    public void readFromNBT(NBTTagCompound nbt, int dimID) {
-        initialized.add(dimID);
-    }
-
-    public boolean isInitialized(int dim) {
-        return initialized.contains(dim);
-    }
+    private static final Map<ResourceLocation, List<SteamNetwork>> networks = new HashMap<>();
 
     @SubscribeEvent
-    public void onTick(TickEvent.ServerTickEvent e) {
-        for (ArrayList<SteamNetwork> nets : networks.values()) {
+    public static void onTick(TickEvent.ServerTickEvent e) {
+        for (List<SteamNetwork> nets : networks.values()) {
             nets.removeIf(net -> !net.tick());
         }
     }
 
-    public SteamNetwork getNewNetwork() {
+    public static SteamNetwork getNewNetwork() {
         SteamNetwork net = new SteamNetwork();
         String name = UUID.randomUUID().toString();
         net.setName(name);
         return net;
     }
 
-    public void add(SteamNetwork network) {
+    public static void add(SteamNetwork network) {
         if (!networks.containsKey(network.getDimension())) {
             networks.put(network.getDimension(), new ArrayList<>());
         }
-        ArrayList<SteamNetwork> dimension = networks.get(network.getDimension());
+        List<SteamNetwork> dimension = networks.get(network.getDimension());
         dimension.add(network);
-        World world = network.getWorld();
-        if (world != null) {
-            SteamNetworkData.get(world).markDirty();
-        }
     }
 
-    public void remove(SteamNetwork network) {
+    public static void remove(SteamNetwork network) {
         if (networks.containsKey(network.getDimension())) {
-            ArrayList<SteamNetwork> dimension = networks.get(network.getDimension());
+            List<SteamNetwork> dimension = networks.get(network.getDimension());
             dimension.remove(network);
-            World world = network.getWorld();
-            if (world != null) {
-                SteamNetworkData.get(world).markDirty();
-            }
         }
-    }
-
-    public void newDimension(int dimensionId) {
-        initialized.add(dimensionId);
     }
 }

@@ -15,6 +15,7 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -58,7 +59,7 @@ public class ItemWrench extends Item implements PipeWrench {
     }
 
     @Override
-    public boolean canWrench(EntityPlayer player, BlockPos pos) {
+    public boolean canWrench(Player player, BlockPos pos) {
         return true;
     }
 }

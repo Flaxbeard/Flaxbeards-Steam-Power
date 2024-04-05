@@ -1,12 +1,12 @@
 package eiteam.esteemedinnovation.api.enhancement;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import javax.annotation.Nonnull;
 
@@ -47,31 +47,33 @@ public interface Enhancement {
 
     /**
      * Called in Item#onUpdate for enhancement-containing items.
-     * @param weaponStack The ItemStack for the weapon.
-     * @param world The current world
-     * @param entity The current containing entity
-     * @param itemSlot The slot in the entity's inventory that the weapon is contained in.
+     *
+     * @param weaponStack         The ItemStack for the weapon.
+     * @param level               The current level
+     * @param entity              The current containing entity
+     * @param itemSlot            The slot in the entity's inventory that the weapon is contained in.
      * @param isWeaponCurrentItem Whether the weapon is the current item.
      */
-    default void onWeaponUpdate(ItemStack weaponStack, World world, Entity entity, int itemSlot, boolean isWeaponCurrentItem) {}
+    default void onWeaponUpdate(ItemStack weaponStack, Level level, Entity entity, int itemSlot, boolean isWeaponCurrentItem) {}
 
     /**
      * @param weaponStack The ItemStack for the weapon.
-     * @param world The world
-     * @param user The user
+     * @param level       The level
+     * @param user        The user
      * @return The volume modifier for sounds produced by the weapon. Depending on the item and case,
-     *         this might be the actual volume, or used in some volume determining math.
+     * this might be the actual volume, or used in some volume determining math.
      */
-    default float getVolume(ItemStack weaponStack, World world, EntityLivingBase user) {
+    default float getVolume(ItemStack weaponStack, Level level, LivingEntity user) {
         return 1F;
     }
 
     /**
      * Called after the weapon fires a round and the entity is spawned. This is after the ArrowLooseEvent is sent
      * and after the ItemStack's loaded NBT key is decremented.
+     *
      * @param weaponStack The ItemStack for the weapon
-     * @param world The world
-     * @param player The player firing the round.
+     * @param level       The world
+     * @param player      The player firing the round.
      */
-    default void afterRoundFired(@Nonnull ItemStack weaponStack, World world, EntityPlayer player) {}
+    default void afterRoundFired(@Nonnull ItemStack weaponStack, Level level, Player player) {}
 }

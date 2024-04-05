@@ -4,6 +4,7 @@ import eiteam.esteemedinnovation.api.steamnet.SteamNetwork;
 import eiteam.esteemedinnovation.api.steamnet.SteamNetworkRegistry;
 import eiteam.esteemedinnovation.transport.TransportationModule;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -13,6 +14,10 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
 
@@ -85,7 +90,7 @@ public class TileEntityValvePipe extends TileEntitySteamPipe {
     }
 
     @Override
-    public boolean doesConnect(EnumFacing face) {
+    public boolean doesConnect(Direction face) {
         return face.getAxis() != dir().getAxis() && super.doesConnect(face);
     }
 
@@ -104,7 +109,7 @@ public class TileEntityValvePipe extends TileEntitySteamPipe {
         if (net == null) {
             return false;
         }
-        BlockPos dirPos = getOffsetPos(direction);
+        BlockPos dirPos = getRelativePos(direction);
         /*
          No super call, because the valve pipe does not actually get a share of the network. For the valve pipe,
          we have to actually check the amount of steam in the network that it is connected to.
@@ -156,7 +161,7 @@ public class TileEntityValvePipe extends TileEntitySteamPipe {
     }
 
     @Override
-    public boolean acceptsGauge(EnumFacing face) {
+    public boolean acceptsGauge(Direction face) {
         return face.getAxis() != dir().getAxis();
     }
 
@@ -204,7 +209,7 @@ public class TileEntityValvePipe extends TileEntitySteamPipe {
     }
 
     @Override
-    public boolean onWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float hitX, float hitY, float hitZ) {
+    public boolean onWrench(ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float hitX, float hitY, float hitZ) {
         return false;
     }
 

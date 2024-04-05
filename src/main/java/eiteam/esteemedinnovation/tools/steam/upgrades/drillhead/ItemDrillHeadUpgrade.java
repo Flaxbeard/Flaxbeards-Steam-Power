@@ -49,7 +49,7 @@ public class ItemDrillHeadUpgrade extends Item implements SteamToolUpgrade {
     }
 
     @Override
-    public boolean modifiesToolStrength() {
+    public boolean modifiesToolTier() {
         return true;
     }
 

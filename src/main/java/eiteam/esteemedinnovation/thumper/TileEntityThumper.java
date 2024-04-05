@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.thumper;
 
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.api.tile.ThumperAdjacentBehaviorModifier;
 import eiteam.esteemedinnovation.commons.EsteemedInnovation;
 import net.minecraft.block.Block;
@@ -17,6 +17,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -26,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TileEntityThumper extends SteamTransporterTileEntity {
+public class TileEntityThumper extends SteamTransporterBlockEntity {
     public int progress = 0;
     private boolean isRunning = false;
     private static final Material[] VALID_MATERIALS = {
@@ -50,7 +51,7 @@ public class TileEntityThumper extends SteamTransporterTileEntity {
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == ThumperModule.THUMPER;
     }
 

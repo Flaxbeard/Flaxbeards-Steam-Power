@@ -1,14 +1,13 @@
 package eiteam.esteemedinnovation.api.tool;
 
 import eiteam.esteemedinnovation.api.SteamChargable;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.world.World;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
-import javax.annotation.Nonnull;
-
+/**
+ * Important note: Upgradeable steam tools must be in the item tag {@link eiteam.esteemedinnovation.api.Constants#UPGRADEABLE_TOOLS}
+ * in order for them to modify loot.
+ */
 public interface SteamTool extends SteamChargable {
     /**
      * Checks if the tool is wound up.
@@ -29,11 +28,4 @@ public interface SteamTool extends SteamChargable {
      * @return The Vanilla tool class associated with this tool.
      */
     String toolClass();
-
-    /**
-     * Public version of the {@link Item#rayTrace(World, EntityPlayer, boolean)} method. Default implementation in
-     * {@link ItemSteamTool} delegates to the Item method.
-     */
-    @Nonnull
-    RayTraceResult rayTrace(World world, EntityPlayer player, boolean useLiquids);
 }

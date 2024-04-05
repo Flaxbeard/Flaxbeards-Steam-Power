@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.charging;
 
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.armor.exosuit.steam.ItemSteamExosuitArmor;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityLivingBase;
@@ -12,12 +12,13 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.List;
 
-public class TileEntityChargingPad extends SteamTransporterTileEntity {
+public class TileEntityChargingPad extends SteamTransporterBlockEntity {
     public EntityLivingBase target;
     public int extendTicks;
     public boolean descending = true;
@@ -60,7 +61,7 @@ public class TileEntityChargingPad extends SteamTransporterTileEntity {
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == ChargingModule.FILLING_PAD;
     }
 

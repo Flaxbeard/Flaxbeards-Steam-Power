@@ -3,13 +3,13 @@ package eiteam.esteemedinnovation.api.exosuit;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import eiteam.esteemedinnovation.api.Constants;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.entity.ai.attributes.AttributeModifier;
-import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.ItemArmor;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.ResourceLocation;
+import eiteam.esteemedinnovation.api.util.ItemStackUtility;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.item.*;
 
 import javax.annotation.Nonnull;
 
@@ -17,6 +17,7 @@ public class ExosuitPlate implements ExosuitEventHandler {
     private String identifier;
     private String invMod;
     private String armorMod;
+    // TODO: We may be able to remove this. It does not seem to be used anywhere.
     private Object plate;
     private String effect;
 
@@ -44,9 +45,9 @@ public class ExosuitPlate implements ExosuitEventHandler {
         return new ResourceLocation(item.getItemIconResource() + "_" + invMod);
     }
 
-    public String getArmorLocation(ExosuitArmor item, EntityEquipmentSlot slot) {
+    public String getArmorLocation(ExosuitArmor item, EquipmentSlot slot) {
         // TODO: Abstract out of API
-        if (slot != EntityEquipmentSlot.LEGS) {
+        if (slot != EquipmentSlot.LEGS) {
             return Constants.EI_MODID + ":textures/models/armor/exo_plate_" + armorMod + "_1.png";
         } else {
             return Constants.EI_MODID + ":textures/models/armor/exo_plate_" + armorMod + "_2.png";
@@ -63,18 +64,18 @@ public class ExosuitPlate implements ExosuitEventHandler {
      * @return The damage reduction amount for the slot and the source. Default implementation returns the IRON
      *         damage reduction amount.
      */
-    public int getDamageReductionAmount(EntityEquipmentSlot slot, DamageSource source) {
-        return ItemArmor.ArmorMaterial.IRON.getDamageReductionAmount(slot);
+    public int getDamageReductionAmount(EquipmentSlot slot, DamageSource source) {
+        return ArmorMaterials.IRON.getDefenseForType(ItemStackUtility.equipmentSlotToArmorType(slot));
     }
 
     public String effect() {
-        return I18n.format(effect);
+        return I18n.get(effect);
     }
 
     /**
-     * @see ExosuitUpgrade#getAttributeModifiersForExosuit(EntityEquipmentSlot, ItemStack)
+     * @see ExosuitUpgrade#getAttributeModifiersForExosuit(EquipmentSlot, ItemStack)
      */
-    public Multimap<String, AttributeModifier> getAttributeModifiersForExosuit(EntityEquipmentSlot armorSlot, @Nonnull ItemStack armorPieceStack) {
+    public Multimap<String, AttributeModifier> getAttributeModifiersForExosuit(EquipmentSlot armorSlot, @Nonnull ItemStack armorPieceStack) {
         return HashMultimap.create();
     }
 }

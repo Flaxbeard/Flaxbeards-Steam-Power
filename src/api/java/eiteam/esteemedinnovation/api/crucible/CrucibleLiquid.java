@@ -1,12 +1,11 @@
 package eiteam.esteemedinnovation.api.crucible;
 
-import eiteam.esteemedinnovation.api.util.StringUtility;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraftforge.oredict.OreDictionary;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -65,23 +64,18 @@ public class CrucibleLiquid {
         List<ItemStack> items = new ArrayList<>();
 
         if (isInput) {
-            for (Map.Entry<Pair<Item, Integer>, Pair<CrucibleLiquid, Integer>> entry : CrucibleRegistry.liquidRecipes.entrySet()) {
+            for (Map.Entry<Ingredient, Pair<CrucibleLiquid, Integer>> entry : CrucibleRegistry.liquidRecipes.entrySet()) {
                 Pair<CrucibleLiquid, Integer> output = entry.getValue();
                 CrucibleLiquid liquid = output.getLeft();
                 int amountCreated = output.getRight();
 
                 if (liquid == this && amountCreated == amount) {
-                    Pair<Item, Integer> input = entry.getKey();
-                    Item melted = input.getLeft();
-                    int meta = input.getRight();
-                    items.add(meta == -1 ? new ItemStack(melted) : new ItemStack(melted, 1, meta));
+                    Ingredient input = entry.getKey();
+                    items.addAll(Arrays.asList(input.getItems()));
                 }
             }
         }
 
-        if (items.isEmpty()) {
-            items = OreDictionary.getOres("ingot" + StringUtility.capitalize(getName()));
-        }
         return items.toArray(new ItemStack[items.size()]);
     }
 

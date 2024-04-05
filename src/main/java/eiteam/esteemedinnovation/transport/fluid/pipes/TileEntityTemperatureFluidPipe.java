@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.transport.fluid.pipes;
 
-import eiteam.esteemedinnovation.api.tile.TileEntityTickableSafe;
+import eiteam.esteemedinnovation.api.tile.BlockEntityTickableSafe;
 import eiteam.esteemedinnovation.api.util.FluidHelper;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
@@ -18,10 +18,10 @@ import static net.minecraftforge.fluids.capability.CapabilityFluidHandler.FLUID_
 
 /**
  * Base class for TileEntities which transport fluids within a certain fluid range.
- * Child classes must implement the {@link TileEntityTickableSafe#canUpdate(IBlockState)}.
+ * Child classes must implement the {@link BlockEntityTickableSafe#canUpdate(net.minecraft.world.level.block.state.BlockState)}.
  */
 // TODO: Impellers
-public abstract class TileEntityTemperatureFluidPipe extends TileEntityTickableSafe {
+public abstract class TileEntityTemperatureFluidPipe extends BlockEntityTickableSafe {
     private int transferAmount;
     private int tickCounter;
     private EnumFacing prevInteractSide;

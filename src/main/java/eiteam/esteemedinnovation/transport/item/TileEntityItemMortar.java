@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.transport.item;
 
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.commons.EsteemedInnovation;
 import eiteam.esteemedinnovation.transport.TransportationModule;
 import net.minecraft.block.state.IBlockState;
@@ -15,8 +15,9 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class TileEntityItemMortar extends SteamTransporterTileEntity implements IInventory {
+public class TileEntityItemMortar extends SteamTransporterBlockEntity implements IInventory {
     public int xTarget;
     public int zTarget;
     public boolean hasTarget = false;
@@ -87,7 +88,7 @@ public class TileEntityItemMortar extends SteamTransporterTileEntity implements 
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == TransportationModule.ITEM_MORTAR;
     }
 

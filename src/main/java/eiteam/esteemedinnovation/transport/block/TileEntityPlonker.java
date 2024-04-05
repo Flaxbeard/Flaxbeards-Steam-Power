@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.transport.block;
 
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.api.wrench.WrenchDisplay;
 import eiteam.esteemedinnovation.api.wrench.Wrenchable;
 import eiteam.esteemedinnovation.transport.TransportationModule;
@@ -8,6 +8,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemBlock;
@@ -20,6 +21,10 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.FakePlayerFactory;
@@ -28,7 +33,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.function.Predicate;
 
-public class TileEntityPlonker extends SteamTransporterTileEntity implements Wrenchable, WrenchDisplay, IInventory {
+public class TileEntityPlonker extends SteamTransporterBlockEntity implements Wrenchable, WrenchDisplay, IInventory {
     private static final String MODE_KEY = "Mode";
     private static final String INV_KEY = "Inventory";
     private boolean prevRedstoneActivated;
@@ -42,7 +47,7 @@ public class TileEntityPlonker extends SteamTransporterTileEntity implements Wre
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == TransportationModule.PLONKER;
     }
 
@@ -65,7 +70,7 @@ public class TileEntityPlonker extends SteamTransporterTileEntity implements Wre
 
         if (canPlace() && world instanceof WorldServer) {
             FakePlayer player = FakePlayerFactory.getMinecraft((WorldServer) world);
-            inventory.getItem().onItemUse(player, world, getOffsetPos(dir), player.getActiveHand(), dir.getOpposite(), 0.5F, 0.5F, 0.5F);
+            inventory.getItem().onItemUse(player, world, getRelativePos(dir), player.getActiveHand(), dir.getOpposite(), 0.5F, 0.5F, 0.5F);
             if (mode == Mode.ALWAYS_ON) {
                 decrSteam(TransportationModule.plonkerConsumption);
             }
@@ -78,7 +83,7 @@ public class TileEntityPlonker extends SteamTransporterTileEntity implements Wre
 
     private boolean isTargetAvailable() {
         EnumFacing dir = world.getBlockState(pos).getValue(BlockPlonker.FACING);
-        BlockPos target = getOffsetPos(dir);
+        BlockPos target = getRelativePos(dir);
         return world.getBlockState(target).getBlock().isReplaceable(world, target);
     }
 
@@ -102,7 +107,7 @@ public class TileEntityPlonker extends SteamTransporterTileEntity implements Wre
     }
 
     @Override
-    public boolean onWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float hitX, float hitY, float hitZ) {
+    public boolean onWrench(ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float hitX, float hitY, float hitZ) {
         if (canSwitchMode(player)) {
             mode = mode.cycle();
             markForResync();

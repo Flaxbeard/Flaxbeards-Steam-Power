@@ -1,16 +1,19 @@
 package eiteam.esteemedinnovation.api.tool;
 
-import net.minecraft.client.resources.I18n;
-import net.minecraft.init.Items;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 // TODO: Use correct ID ranges (1-10? we only have 2 upgrades for each tool). Perhaps instead of using an NBTTagList we
 // could simply have CoreUpgrade and HeadUpgrade NBT tags.
@@ -35,10 +38,10 @@ public class UtilSteamTool {
             return false;
         }
 
-        if (me.hasTagCompound() && me.getTagCompound().hasKey("upgrades")) {
+        if (me.hasTag() && me.getTag().contains("upgrades")) {
             for (int i = 1; i < 10; i++) {
-                if (me.getTagCompound().getCompoundTag("upgrades").hasKey(Integer.toString(i))) {
-                    ItemStack stack = new ItemStack(me.getTagCompound().getCompoundTag("upgrades").getCompoundTag(Integer.toString(i)));
+                if (me.getTag().getCompound("upgrades").contains(Integer.toString(i))) {
+                    ItemStack stack = ItemStack.of(me.getTag().getCompound("upgrades").getCompound(Integer.toString(i)));
                     if (stack.getItem() == check) {
                         return true;
                     }
@@ -52,19 +55,19 @@ public class UtilSteamTool {
      * Gets all of the upgrades (except non-standard ones that do not implement {@link SteamToolUpgrade})
      * that are installed in the tool
      * @param me The tool ItemStack.
-     * @return The {@link ArrayList} of all the upgrades. This can be empty. Expect emptiness.
+     * @return The {@link List} of all the upgrades. This can be empty. Expect emptiness.
      */
-    public static ArrayList<SteamToolUpgrade> getUpgrades(@Nonnull ItemStack me) {
-        ArrayList<SteamToolUpgrade> upgrades = new ArrayList<>();
-        if (!me.hasTagCompound() || !me.getTagCompound().hasKey("upgrades")) {
+    public static List<SteamToolUpgrade> getUpgrades(@Nonnull ItemStack me) {
+        List<SteamToolUpgrade> upgrades = new ArrayList<>();
+        if (!me.hasTag() || !me.getTag().contains("upgrades")) {
             return upgrades;
         }
 
-        NBTTagCompound unbt = me.getTagCompound().getCompoundTag("upgrades");
+        CompoundTag unbt = me.getTag().getCompound("upgrades");
 
         for (int i = 1; i < 10; i++) {
-            if (unbt.hasKey(Integer.toString(i))) {
-                Item item = new ItemStack(unbt.getCompoundTag(Integer.toString(i))).getItem();
+            if (unbt.contains(Integer.toString(i))) {
+                Item item = ItemStack.of(unbt.getCompound(Integer.toString(i))).getItem();
                 if (item instanceof SteamToolUpgrade) {
                     upgrades.add((SteamToolUpgrade) item);
                 }
@@ -77,18 +80,18 @@ public class UtilSteamTool {
     /**
      * Exactly like {@link #getUpgrades(ItemStack)}, but obtains ItemStacks instead of {@link SteamToolUpgrade}.
      * @param self The ItemStack of the tool
-     * @return An ArrayList of all the upgrade ItemStacks.
+     * @return A List of all the upgrade ItemStacks.
      */
-    public static ArrayList<ItemStack> getUpgradeStacks(@Nonnull ItemStack self) {
-        ArrayList<ItemStack> upgrades = new ArrayList<>();
-        if (!self.hasTagCompound() || !self.getTagCompound().hasKey("upgrades")) {
+    public static List<ItemStack> getUpgradeStacks(@Nonnull ItemStack self) {
+        List<ItemStack> upgrades = new ArrayList<>();
+        if (!self.hasTag() || !self.getTag().contains("upgrades")) {
             return upgrades;
         }
 
-        NBTTagCompound unbt = self.getTagCompound().getCompoundTag("upgrades");
+        CompoundTag unbt = self.getTag().getCompound("upgrades");
         for (int i = 0; i < 10; i++) {
-            if (unbt.hasKey(Integer.toString(i))) {
-                ItemStack stack = new ItemStack(unbt.getCompoundTag(Integer.toString(i)));
+            if (unbt.contains(Integer.toString(i))) {
+                ItemStack stack = ItemStack.of(unbt.getCompound(Integer.toString(i)));
                 Item item = stack.getItem();
                 if (item instanceof SteamToolUpgrade) {
                     upgrades.add(stack);
@@ -100,26 +103,24 @@ public class UtilSteamTool {
     }
 
     /**
-     * Essentially setInventorySlotContents
+     * Stores the provided upgrade stack in the provided steam tool stack. Used in setInventorySlotContents, which is
+     * called by the Engineering Table when upgrading an item.
      * @param me The ItemStack being edited.
-     * @param slot ???
-     * @param stack ???
-     * Note: The original method was not documented, so I don't know what these params actually are.
+     * @param slot Upgrade slot
+     * @param upgradeStack The upgrade being installed
      */
-    public static void setNBTInventory(@Nonnull ItemStack me, int slot, @Nonnull ItemStack stack) {
-        if (!me.hasTagCompound()) {
-            me.setTagCompound(new NBTTagCompound());
+    public static void setNBTInventory(@Nonnull ItemStack me, int slot, @Nonnull ItemStack upgradeStack) {
+        if (!me.hasTag()) {
+            me.setTag(new CompoundTag());
         }
-        if (!me.getTagCompound().hasKey("upgrades")) {
-            me.getTagCompound().setTag("upgrades", new NBTTagCompound());
+        if (!me.getTag().contains("upgrades")) {
+            me.getTag().put("upgrades", new CompoundTag());
         }
-        if (me.getTagCompound().getCompoundTag("upgrades").hasKey(Integer.toString(slot))) {
-            me.getTagCompound().getCompoundTag("upgrades").removeTag(Integer.toString(slot));
+        if (me.getTag().getCompound("upgrades").contains(Integer.toString(slot))) {
+            me.getTag().getCompound("upgrades").remove(Integer.toString(slot));
         }
-        NBTTagCompound stc = new NBTTagCompound();
-        if (!stack.isEmpty()) {
-            stack.writeToNBT(stc);
-            me.getTagCompound().getCompoundTag("upgrades").setTag(Integer.toString(slot), stc);
+        if (!upgradeStack.isEmpty()) {
+            me.getTag().getCompound("upgrades").put(Integer.toString(slot), upgradeStack.save(new CompoundTag()));
         }
     }
 
@@ -127,44 +128,55 @@ public class UtilSteamTool {
      * Checks if the ItemStack has the Speed and Ticks NBT tags. If it doesn't, it creates them
      * and sets them to 0.
      * @param me The ItemStack of the tool
-     * @return The NBTTagCompound of the tool.
+     * @return The ItemStack's new CompoundTag.
      */
     @Nonnull
-    public static NBTTagCompound checkNBT(@Nonnull ItemStack me) {
-        if (!me.hasTagCompound()) {
-            me.setTagCompound(new NBTTagCompound());
+    public static CompoundTag checkNBT(@Nonnull ItemStack me) {
+        if (!me.hasTag()) {
+            me.setTag(new CompoundTag());
         }
-        if (!me.getTagCompound().hasKey("Speed")) {
-            me.getTagCompound().setInteger("Speed", 0);
+        if (!me.getTag().contains("Speed")) {
+            me.getTag().putInt("Speed", 0);
         }
-        if (!me.getTagCompound().hasKey("Ticks")) {
-            me.getTagCompound().setInteger("Ticks", 0);
+        if (!me.getTag().contains("Ticks")) {
+            me.getTag().putInt("Ticks", 0);
         }
-        return me.getTagCompound();
+        return me.getTag();
     }
 
     /**
-     * Gets an ArrayList of the Strings that should be put in the item's tooltip.
+     * Gets a List of tooltip components that should be put in the item's tooltip.
      * @param upgrades The ItemStacks that are being tested against. See {@link #getUpgradeStacks(ItemStack)}
      * @param redSlot The slot that should be red. See {@link ItemSteamTool#getRedSlot()}.
-     * @return The strings. Will return an empty array if there are no upgrades or strings.
+     * @return The components to be added.
      */
     @Nonnull
-    public static ArrayList<String> getInformationFromStacks(@Nullable ArrayList<ItemStack> upgrades, @Nonnull SteamToolSlot redSlot, @Nonnull ItemStack tool) {
+    public static List<Component> getUpgradeTooltipComponents(@Nullable Iterable<ItemStack> upgrades, @Nonnull SteamToolSlot redSlot) {
         if (upgrades == null) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
 
-        ArrayList<String> strings = new ArrayList<>();
+        List<Component> components = new ArrayList<>();
 
         for (ItemStack stack : upgrades) {
             SteamToolUpgrade upgrade = (SteamToolUpgrade) stack.getItem();
-            TextFormatting format = upgrade.getToolSlot() == redSlot ? TextFormatting.RED : TextFormatting.DARK_GREEN;
-            String info = upgrade.getInformation(stack, tool);
-            String toAdd = info == null ? stack.getItem().getTranslationKey() + ".name" : info;
-            strings.add(format + "" + I18n.format(toAdd));
+            ChatFormatting format = upgrade.getToolSlot() == redSlot ? ChatFormatting.RED : ChatFormatting.DARK_GREEN;
+            String id = stack.getDescriptionId();
+            String toAdd = I18n.exists(id + ".info") ? I18n.get(id) + ".info" : stack.getDescriptionId() + ".name";
+            components.add(Component.translatable(toAdd).withStyle(format));
         }
 
-        return strings;
+        return components;
+    }
+
+    /**
+     * Gets the upgrade tooltips for the upgrades in the provided steam tool.
+     * @param toolStack The steam tool.
+     * @param redSlot The slot that should be red. See {@link ItemSteamTool#getRedSlot()}.
+     * @return The components to be added.
+     */
+    @Nonnull
+    public static List<Component> getUpgradeTooltipComponents(ItemStack toolStack, @Nonnull SteamToolSlot redSlot) {
+        return getUpgradeTooltipComponents(getUpgradeStacks(toolStack), redSlot);
     }
 }

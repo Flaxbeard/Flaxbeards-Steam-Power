@@ -1,22 +1,17 @@
 package eiteam.esteemedinnovation.api;
 
-import net.minecraftforge.common.config.Configuration;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
-import java.io.File;
+public final class APIConfig {
+    public static final ModConfigSpec SPEC;
+    public static final ModConfigSpec.ConfigValue<Boolean> SAFE_MODE;
 
-public class APIConfig {
-    public static File getConfigFile(String fileName) {
-        return new File(APIMod.INSTANCE.configDir.getPath() + "/" + fileName);
-    }
+    static {
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+        builder.push("Steam Network");
+        SAFE_MODE = builder.comment("Enable safe mode (no explosions)").define("safe_mode", false);
+        builder.pop();
 
-    public static boolean safeMode;
-
-    static void load() {
-        Configuration config = new Configuration(getConfigFile("API.cfg"));
-        config.load();
-
-        safeMode = config.get("Other", "Enable safe mode (no explosions)", false).getBoolean();
-
-        config.save();
+        SPEC = builder.build();
     }
 }

@@ -2,23 +2,24 @@ package eiteam.esteemedinnovation.api.tile;
 
 import eiteam.esteemedinnovation.api.SteamTransporter;
 import eiteam.esteemedinnovation.api.steamnet.SteamNetwork;
-import eiteam.esteemedinnovation.api.steamnet.SteamNetworkRegistry;
 import eiteam.esteemedinnovation.api.util.Coord4;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
-public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe implements SteamTransporter {
+public abstract class SteamTransporterBlockEntity extends BlockEntityTickableSafe implements SteamTransporter {
     public String name = "SteamTransporterTileEntity";
     private float pressureResistance = 0.8F;
     private float lastPressure = -1F;
@@ -26,76 +27,78 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
     protected int capacity;
     protected String networkName;
     protected SteamNetwork network;
-    protected EnumFacing[] distributionDirections;
+    protected Direction[] distributionDirections;
     private boolean shouldJoin = false;
     private int steam = 0;
-    private ArrayList<EnumFacing> gaugeSideBlacklist = new ArrayList<>();
+    private List<Direction> gaugeSideBlacklist = new ArrayList<>();
     private boolean shouldExplode;
     private boolean hasExploded;
 
-    public SteamTransporterTileEntity() {
-        this(EnumFacing.VALUES);
+    public SteamTransporterBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+        this(type, pos, state, Direction.values());
     }
 
-    public SteamTransporterTileEntity(EnumFacing[] distributionDirections) {
-        this(10_000, distributionDirections);
+    public SteamTransporterBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, Direction[] distributionDirections) {
+        this(type, pos, state, 10_000, distributionDirections);
     }
 
-    public SteamTransporterTileEntity(int capacity, EnumFacing[] distributionDirections) {
+    public SteamTransporterBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, int capacity, Direction[] distributionDirections) {
+        super(type, pos, state);
         this.distributionDirections = distributionDirections;
         this.capacity = capacity;
     }
 
     @Override
-    public SPacketUpdateTileEntity getUpdatePacket() {
-        return new SPacketUpdateTileEntity(pos, 1, getUpdateTag());
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    @Nonnull
-    @Override
-    public NBTTagCompound getUpdateTag() {
-        NBTTagCompound access = writeToNBT(new NBTTagCompound());
+    private void readSteamData(CompoundTag tag) {
+        if (tag.contains("NetworkName")) {
+            networkName = tag.getString("NetworkName");
+            pressure = tag.getFloat("Pressure");
+            steam = tag.getInt("Steam");
+        }
+    }
+
+    private void writeSteamData(CompoundTag tag) {
         if (networkName != null) {
-//            EsteemedInnovation.log.debug("Setting pressure!");
-            access.setString("networkName", networkName);
-            access.setFloat("pressure", getPressure());
-        }
-        return access;
-    }
-
-    @Override
-    public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
-        super.onDataPacket(net, pkt);
-        NBTTagCompound access = pkt.getNbtCompound();
-        readFromNBT(access);
-        if (access.hasKey("networkName")) {
-            networkName = access.getString("networkName");
-            pressure = access.getFloat("pressure");
-//            EsteemedInnovation.log.debug("Set pressure to "+this.pressure);
-        }
-    }
-
-    @Override
-    public void readFromNBT(NBTTagCompound compound) {
-        super.readFromNBT(compound);
-        if (compound.hasKey("steam")) {
-            steam = compound.getInteger("steam");
-            /*
-            log.debug("Read steam from NBT: "+this.steam);
-        } else {
-            log.debug("Didn't read steam from NBT.");
-            */
+            tag.putString("NetworkName", networkName);
+            tag.putFloat("Pressure", getPressure());
+            tag.putFloat("Steam", steam);
         }
     }
 
     @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
-        super.writeToNBT(compound);
-        //log.debug("writing STTE to NBT with steam: "+this.steam);
-        compound.setInteger("steam", steam);
+    public CompoundTag getUpdateTag() {
+        CompoundTag tag = super.getUpdateTag();
+        writeSteamData(tag);
+        return tag;
+    }
 
-        return compound;
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+        super.onDataPacket(net, pkt);
+        handleUpdateTag(pkt.getTag());
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundTag tag) {
+        super.handleUpdateTag(tag);
+        readSteamData(tag);
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        writeSteamData(tag);
+    }
+
+    @Override
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        readSteamData(tag);
     }
 
     @Override
@@ -125,7 +128,7 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
         if (shouldJoin) {
             refresh();
         }
-        if (!world.isRemote) {
+        if (!level.isClientSide()) {
             if (steam != getSteamShare()) {
                 steam = getSteamShare();
                 markDirty();
@@ -136,7 +139,6 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
                     //EsteemedInnovation.log.debug("Updating PRESHAAA");
                     markForResync();
                     lastPressure = getPressure();
-                    net.markDirty();
                 }
             }
             if (shouldExplode) {
@@ -147,7 +149,7 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
     }
 
     @Override
-    public void insertSteam(int amount, EnumFacing face) {
+    public void insertSteam(int amount, Direction face) {
         SteamNetwork net = getNetwork();
         if (net != null) {
             net.addSteam(amount);
@@ -167,7 +169,7 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
         SteamNetwork net = getNetwork();
         net.decrSteam((int) (net.getSteam() * 0.1F));
         net.split(this, true);
-        world.createExplosion(null, pos.getX() + 0.5F, pos.getY() + 0.5F, pos.getZ() + 0.5F, 4F, true);
+        level.explode(null, worldPosition.getX() + 0.5F, worldPosition.getY() + 0.5F, worldPosition.getZ() + 0.5F, 4F, Level.ExplosionInteraction.TNT);
     }
 
     @Override
@@ -175,8 +177,8 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
         shouldExplode = true;
     }
 
-    private boolean isValidSteamSide(EnumFacing face) {
-        for (EnumFacing d : distributionDirections) {
+    private boolean isValidSteamSide(Direction face) {
+        for (Direction d : distributionDirections) {
             if (d == face) {
                 return true;
             }
@@ -184,23 +186,23 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
         return false;
     }
 
-    protected void addSideToGaugeBlacklist(EnumFacing face) {
+    protected void addSideToGaugeBlacklist(Direction face) {
         gaugeSideBlacklist.add(face);
     }
 
-    public void addSidesToGaugeBlacklist(EnumFacing[] faces) {
-        for (EnumFacing face : faces) {
+    public void addSidesToGaugeBlacklist(Direction[] faces) {
+        for (Direction face : faces) {
             addSideToGaugeBlacklist(face);
         }
     }
 
     @Override
-    public boolean doesConnect(EnumFacing face) {
+    public boolean doesConnect(Direction face) {
         return isValidSteamSide(face);
     }
 
     @Override
-    public boolean acceptsGauge(EnumFacing face) {
+    public boolean acceptsGauge(Direction face) {
         return !gaugeSideBlacklist.contains(face);
     }
 
@@ -217,11 +219,11 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
      * Sets the distribution directions to everything except the provided directions.
      * @param exclusions The directions to exclude form the distribution directions.
      */
-    protected void setValidDistributionDirectionsExcluding(EnumFacing... exclusions) {
-        EnumFacing[] validDirs = new EnumFacing[6 - exclusions.length];
+    protected void setValidDistributionDirectionsExcluding(Direction... exclusions) {
+        Direction[] validDirs = new Direction[6 - exclusions.length];
         int i = 0;
-        List<EnumFacing> exclusionList = Arrays.asList(exclusions);
-        for (EnumFacing dir : EnumFacing.VALUES) {
+        List<Direction> exclusionList = Arrays.asList(exclusions);
+        for (Direction dir : Direction.values()) {
             if (!exclusionList.contains(dir)) {
                 validDirs[i] = dir;
                 i++;
@@ -230,20 +232,20 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
         setDistributionDirections(validDirs);
     }
 
-    protected void setDistributionDirections(EnumFacing[] faces) {
+    protected void setDistributionDirections(Direction[] faces) {
         distributionDirections = faces;
     }
 
     @Override
-    public HashSet<EnumFacing> getConnectionSides() {
-        HashSet<EnumFacing> out = new HashSet<>();
+    public Set<Direction> getConnectionSides() {
+        HashSet<Direction> out = new HashSet<>();
         out.addAll(Arrays.asList(distributionDirections));
         return out;
     }
 
     @Override
     public Coord4 getCoords() {
-        return new Coord4(pos, world.provider.getDimension());
+        return new Coord4(worldPosition, level.dimension().location());
     }
 
     @Override
@@ -276,11 +278,10 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
     }
 
     public boolean hasGauge() {
-        for (EnumFacing dir : EnumFacing.VALUES) {
+        for (Direction dir : Direction.values()) {
             if (acceptsGauge(dir)) {
-                BlockPos offsetPos = pos.offset(dir);
-                TileEntity tile = world.getTileEntity(offsetPos);
-                if (tile instanceof SteamReactorTileEntity) {
+                BlockEntity tile = level.getBlockEntity(getRelativePos(dir));
+                if (tile instanceof SteamReactorBlockEntity) {
                     return true;
                 }
             }
@@ -295,33 +296,31 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
             FMLRelaunchLog.info("Refreshing", null);
         }
         */
-        if (getNetwork() == null && !world.isRemote) {
-            if (SteamNetworkRegistry.getInstance().isInitialized(getDimension())) {
-                /*
-                EsteemedInnovation.log.debug("Null network");
-                if (this.networkName != null && SteamNetworkRegistry.getInstance().isInitialized(this.getDimension())){
-                    EsteemedInnovation.log.debug("I have a network!");
-                    this.network = SteamNetworkRegistry.getInstance().getNetwork(this.networkName, this);
-                    this.network.rejoin(this);
-                } else {
-                    EsteemedInnovation.log.debug("Requesting new network or joining existing.en");
-                }
-                */
-                SteamNetwork.newOrJoin(this);
-                markForResync();
+        if (getNetwork() == null && !level.isClientSide()) {
+            /*
+            EsteemedInnovation.log.debug("Null network");
+            if (this.networkName != null && SteamNetworkRegistry.getInstance().isInitialized(this.getDimension())){
+                EsteemedInnovation.log.debug("I have a network!");
+                this.network = SteamNetworkRegistry.getInstance().getNetwork(this.networkName, this);
+                this.network.rejoin(this);
+            } else {
+                EsteemedInnovation.log.debug("Requesting new network or joining existing.en");
             }
+            */
+            SteamNetwork.newOrJoin(this);
+            markForResync();
         }
     }
 
     @Override
-    public int getDimension() {
-        return world.provider.getDimension();
+    public ResourceLocation getDimension() {
+        return level.dimension().location();
     }
 
     @Nonnull
     @Override
-    public World getWorldObj() {
-        return world;
+    public Level getLevelObj() {
+        return level;
     }
 
     @Override
@@ -341,12 +340,4 @@ public abstract class SteamTransporterTileEntity extends TileEntityTickableSafe 
 
     @Override
     public void wasAdded() {}
-
-    /**
-     * Gets the current BlockPos offset by the EnumFacing.
-     * @param facing The direction
-     */
-    protected BlockPos getOffsetPos(EnumFacing facing) {
-        return pos.offset(facing);
-    }
 }

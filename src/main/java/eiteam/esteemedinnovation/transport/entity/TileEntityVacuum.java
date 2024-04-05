@@ -1,13 +1,14 @@
 package eiteam.esteemedinnovation.transport.entity;
 
 import eiteam.esteemedinnovation.api.steamnet.SteamNetwork;
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.api.tile.ThumperAdjacentBehaviorModifier;
 import eiteam.esteemedinnovation.api.wrench.WrenchDisplay;
 import eiteam.esteemedinnovation.api.wrench.Wrenchable;
 import eiteam.esteemedinnovation.commons.util.MathUtility;
 import eiteam.esteemedinnovation.transport.TransportationModule;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,6 +27,10 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.Post;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -34,7 +39,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class TileEntityVacuum extends SteamTransporterTileEntity implements Wrenchable, WrenchDisplay, ThumperAdjacentBehaviorModifier {
+public class TileEntityVacuum extends SteamTransporterBlockEntity implements Wrenchable, WrenchDisplay, ThumperAdjacentBehaviorModifier {
     private static final int VACUUM_STEAM_CONSUMPTION = TransportationModule.vacuumConsumption;
 
     // half angle of cone
@@ -95,7 +100,7 @@ public class TileEntityVacuum extends SteamTransporterTileEntity implements Wren
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == TransportationModule.VACUUM;
     }
 
@@ -308,7 +313,7 @@ public class TileEntityVacuum extends SteamTransporterTileEntity implements Wren
     }
 
     @Override
-    public boolean onWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float xO, float yO, float zO) {
+    public boolean onWrench(ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float xO, float yO, float zO) {
         if (player.isSneaking()) {
             range = MathUtility.minWithDefault(19, range + 2, 5);
             markForResync();
@@ -317,7 +322,7 @@ public class TileEntityVacuum extends SteamTransporterTileEntity implements Wren
             int steam = getSteamShare();
 
             getNetwork().split(this, true);
-            EnumFacing myDir = world.getBlockState(pos).getValue(BlockVacuum.FACING);
+            EnumFacing myDir = level.getBlockState(pos).getValue(BlockVacuum.FACING);
             setValidDistributionDirectionsExcluding(myDir, myDir.getOpposite());
 
             SteamNetwork.newOrJoin(this);
@@ -333,7 +338,7 @@ public class TileEntityVacuum extends SteamTransporterTileEntity implements Wren
     }
 
     @Override
-    public void dropItems(SteamTransporterTileEntity thumper, List<ItemStack> drops, IBlockState state, Collection<ThumperAdjacentBehaviorModifier> allBehaviorModifiers, EnumFacing directionIn) {
+    public void dropItems(SteamTransporterBlockEntity thumper, List<ItemStack> drops, IBlockState state, Collection<ThumperAdjacentBehaviorModifier> allBehaviorModifiers, EnumFacing directionIn) {
         BlockPos offsetPos = pos.offset(directionIn);
         TileEntity invTile = world.getTileEntity(offsetPos);
         // This will never happen because of isValidBehaviorModifier, but it won't compile without it :(
@@ -352,7 +357,7 @@ public class TileEntityVacuum extends SteamTransporterTileEntity implements Wren
     }
 
     @Override
-    public boolean isValidBehaviorModifier(SteamTransporterTileEntity thumper, EnumFacing directionIn) {
+    public boolean isValidBehaviorModifier(SteamTransporterBlockEntity thumper, Direction directionIn) {
         BlockPos offsetPos = pos.offset(directionIn);
         TileEntity tile = world.getTileEntity(offsetPos);
         return tile instanceof IInventory;

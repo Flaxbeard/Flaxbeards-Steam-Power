@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.api.wrench;
 
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.neoforged.neoforge.client.event.RenderGuiOverlayEvent;
 
 public interface WrenchDisplay {
-    void displayWrench(RenderGameOverlayEvent.Post event);
+    void displayWrench(RenderGuiOverlayEvent.Post event);
 }

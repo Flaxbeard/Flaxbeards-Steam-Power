@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.api;
 
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 
@@ -25,7 +25,7 @@ public interface SteamChargable {
      * @param entity The entity using the thing.
      * @return Whether it was a successful add.
      */
-    boolean addSteam(@Nonnull ItemStack me, int amount, EntityLivingBase entity);
+    boolean addSteam(@Nonnull ItemStack me, int amount, LivingEntity entity);
 
     /**
      * Checks whether the ItemStack has the amount of power in its steam storage. The opposite of
@@ -52,5 +52,5 @@ public interface SteamChargable {
      * @param entity The entity using the thing.
      * @return Whether steam was successfully drained.
      */
-    boolean drainSteam(@Nonnull ItemStack me, int amountToDrain, EntityLivingBase entity);
+    boolean drainSteam(@Nonnull ItemStack me, int amountToDrain, LivingEntity entity);
 }

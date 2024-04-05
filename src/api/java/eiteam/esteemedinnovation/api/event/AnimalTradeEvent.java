@@ -1,9 +1,9 @@
 package eiteam.esteemedinnovation.api.event;
 
-import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.eventhandler.Event;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.bus.api.Event;
 
 import javax.annotation.Nonnull;
 
@@ -14,12 +14,12 @@ public class AnimalTradeEvent extends Event {
     /**
      * The ocelot or wolf selling the items.
      */
-    public final EntityLiving salesperson;
+    public final LivingEntity salesperson;
 
     /**
      * The customer buying items.
      */
-    public final EntityPlayer customer;
+    public final Player customer;
 
     /**
      * The ItemStack to buy.
@@ -40,7 +40,7 @@ public class AnimalTradeEvent extends Event {
      * @param toBuy The ItemStack to buy.
      * @param toSell The ItemStack to sell.
      */
-    public AnimalTradeEvent(EntityLiving entity, EntityPlayer customer, @Nonnull ItemStack toBuy, @Nonnull ItemStack toSell) {
+    public AnimalTradeEvent(LivingEntity entity, Player customer, @Nonnull ItemStack toBuy, @Nonnull ItemStack toSell) {
         this.salesperson = entity;
         this.customer = customer;
         this.toBuy = toBuy;

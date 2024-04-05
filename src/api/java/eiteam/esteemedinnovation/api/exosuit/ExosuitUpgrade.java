@@ -2,13 +2,13 @@ package eiteam.esteemedinnovation.api.exosuit;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import net.minecraft.client.model.ModelBiped;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.ai.attributes.AttributeModifier;
-import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.model.HumanoidArmorModel;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -43,7 +43,7 @@ public interface ExosuitUpgrade extends ExosuitEventHandler {
 
     Class<? extends ModelExosuitUpgrade> getModel();
 
-    void updateModel(ModelBiped parentModel, EntityLivingBase entityLivingBase, @Nonnull ItemStack itemStack, ModelExosuitUpgrade modelExosuitUpgrade);
+    <T extends LivingEntity> void updateModel(HumanoidArmorModel<T> parentModel, T entity, @Nonnull ItemStack itemStack, ModelExosuitUpgrade modelExosuitUpgrade);
 
     void writeInfo(List<String> list);
 
@@ -54,7 +54,7 @@ public interface ExosuitUpgrade extends ExosuitEventHandler {
      * @return A Multimap that will have all of its entries added to the armor's attribute modifiers. Default implementation
      *         returns an empty multimap.
      */
-    default Multimap<String, AttributeModifier> getAttributeModifiersForExosuit(EntityEquipmentSlot armorSlot, @Nonnull ItemStack armorPieceStack) {
+    default Multimap<String, AttributeModifier> getAttributeModifiersForExosuit(EquipmentSlot armorSlot, @Nonnull ItemStack armorPieceStack) {
         return HashMultimap.create();
     }
 
@@ -62,8 +62,8 @@ public interface ExosuitUpgrade extends ExosuitEventHandler {
      * @param entity The entity to check
      * @return Whether this upgrade is installed in its according ExosuitArmor piece worn by the provided entity.
      */
-    default boolean isInstalled(EntityLivingBase entity) {
-        ItemStack armor = entity.getItemStackFromSlot(getSlot().getArmorPiece());
+    default boolean isInstalled(LivingEntity entity) {
+        ItemStack armor = entity.getItemBySlot(getSlot().getArmorPiece());
         return this instanceof Item && armor.getItem() instanceof ExosuitArmor &&
           ((ExosuitArmor) armor.getItem()).hasUpgrade(armor, (Item) this);
     }

@@ -2,7 +2,7 @@ package eiteam.esteemedinnovation.smasher;
 
 import eiteam.esteemedinnovation.api.SmasherRegistry;
 import eiteam.esteemedinnovation.api.steamnet.SteamNetwork;
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.api.wrench.WrenchDisplay;
 import eiteam.esteemedinnovation.api.wrench.Wrenchable;
 import eiteam.esteemedinnovation.commons.EsteemedInnovation;
@@ -12,6 +12,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -22,9 +23,12 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.Post;
 
 import java.util.ArrayList;
@@ -34,7 +38,7 @@ import java.util.List;
 import static eiteam.esteemedinnovation.smasher.SmasherModule.ROCK_SMASHER;
 import static eiteam.esteemedinnovation.smasher.SmasherModule.ROCK_SMASHER_DUMMY;
 
-public class TileEntitySmasher extends SteamTransporterTileEntity implements Wrenchable, WrenchDisplay {
+public class TileEntitySmasher extends SteamTransporterBlockEntity implements Wrenchable, WrenchDisplay {
     public int spinup = 0;
     private float extendedLength = 0.0F;
     private Block smooshingBlock;
@@ -150,7 +154,7 @@ public class TileEntitySmasher extends SteamTransporterTileEntity implements Wre
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == ROCK_SMASHER;
     }
 
@@ -423,7 +427,7 @@ public class TileEntitySmasher extends SteamTransporterTileEntity implements Wre
     }
 
     @Override
-    public boolean onWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float hitX, float hitY, float hitZ) {
+    public boolean onWrench(ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float hitX, float hitY, float hitZ) {
         if (player.isSneaking()) {
             hasBeenSet = true;
             blockBreakerMode = !blockBreakerMode;
@@ -433,10 +437,10 @@ public class TileEntitySmasher extends SteamTransporterTileEntity implements Wre
             int z2 = target[1];
             int opposite = target[2];
             BlockPos pos2 = new BlockPos(x2, y2, z2);
-            IBlockState state2 = world.getBlockState(pos2);
+            IBlockState state2 = level.getBlockState(pos2);
             Block block = state2.getBlock();
             if (block == ROCK_SMASHER && block.getMetaFromState(state2) == opposite) {
-                TileEntitySmasher smasher = (TileEntitySmasher) world.getTileEntity(pos2);
+                TileEntitySmasher smasher = (TileEntitySmasher) level.getTileEntity(pos2);
                 if (smasher != null) {
                     smasher.blockBreakerMode = blockBreakerMode;
                     smasher.hasBeenSet = true;
@@ -447,7 +451,7 @@ public class TileEntitySmasher extends SteamTransporterTileEntity implements Wre
         } else {
             int steam = getSteamShare();
             getNetwork().split(this, true);
-            EnumFacing myFacing = world.getBlockState(pos).getValue(BlockSmasher.FACING);
+            EnumFacing myFacing = level.getBlockState(pos).getValue(BlockSmasher.FACING);
             setValidDistributionDirectionsExcluding(myFacing, EnumFacing.UP);
             SteamNetwork.newOrJoin(this);
             getNetwork().addSteam(steam);

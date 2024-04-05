@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.steamsafety.whistle;
 
+import eiteam.esteemedinnovation.api.tile.SteamReactorBlockEntity;
 import eiteam.esteemedinnovation.commons.EsteemedInnovation;
-import eiteam.esteemedinnovation.api.tile.SteamReactorTileEntity;
 import eiteam.esteemedinnovation.commons.audio.SoundTile;
 import eiteam.esteemedinnovation.commons.audio.TickableSoundTile;
 import eiteam.esteemedinnovation.steamsafety.SafetyModule;
@@ -11,11 +11,11 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.*;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class TileEntityWhistle extends SteamReactorTileEntity implements SoundTile {
+public class TileEntityWhistle extends SteamReactorBlockEntity implements SoundTile {
     private float volume;
     private boolean isSoundRegistered;
     private boolean isSounding;
@@ -41,7 +41,7 @@ public class TileEntityWhistle extends SteamReactorTileEntity implements SoundTi
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == SafetyModule.STEAM_WHISTLE;
     }
 

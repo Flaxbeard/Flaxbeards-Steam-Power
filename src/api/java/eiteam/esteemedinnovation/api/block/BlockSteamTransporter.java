@@ -1,20 +1,20 @@
 package eiteam.esteemedinnovation.api.block;
 
 import eiteam.esteemedinnovation.api.SteamTransporter;
-import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 public abstract class BlockSteamTransporter extends Block {
-    public BlockSteamTransporter(Material material) {
-        super(material);
+    public BlockSteamTransporter(Properties properties) {
+        super(properties);
     }
 
     @Override
-    public void breakBlock(World world, BlockPos pos, IBlockState state) {
-        SteamTransporter te = (SteamTransporter) world.getTileEntity(pos);
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        super.onRemove(state, level, pos, newState, movedByPiston);
+        SteamTransporter te = (SteamTransporter) level.getBlockEntity(pos);
         if (te == null) {
             return;
         }

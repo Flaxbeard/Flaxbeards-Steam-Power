@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.transport.entity;
 
 import eiteam.esteemedinnovation.api.steamnet.SteamNetwork;
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.api.wrench.WrenchDisplay;
 import eiteam.esteemedinnovation.api.wrench.Wrenchable;
 import eiteam.esteemedinnovation.commons.EsteemedInnovation;
@@ -13,6 +13,7 @@ import net.minecraft.block.BlockTrapDoor;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -26,6 +27,10 @@ import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.Post;
 import net.minecraftforge.fluids.BlockFluidBase;
 import net.minecraftforge.fml.relauncher.Side;
@@ -34,7 +39,7 @@ import org.lwjgl.opengl.GL11;
 
 import java.util.List;
 
-public class TileEntityFan extends SteamTransporterTileEntity implements Wrenchable, WrenchDisplay {
+public class TileEntityFan extends SteamTransporterBlockEntity implements Wrenchable, WrenchDisplay {
     public boolean active;
     public boolean powered = false;
     public boolean lastSteam = false;
@@ -120,7 +125,7 @@ public class TileEntityFan extends SteamTransporterTileEntity implements Wrencha
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == TransportationModule.FAN;
     }
 
@@ -212,14 +217,14 @@ public class TileEntityFan extends SteamTransporterTileEntity implements Wrencha
     }
 
     @Override
-    public boolean onWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float hitX, float hitY, float hitZ) {
+    public boolean onWrench(ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float hitX, float hitY, float hitZ) {
         if (player.isSneaking()) {
             range = MathUtility.minWithDefault(19, range + 2, 5);
             markForResync(state);
         } else {
             int steam = getSteamShare();
             getNetwork().split(this, true);
-            setDistributionDirections(new EnumFacing[] { world.getBlockState(pos).getValue(BlockFan.FACING).getOpposite() });
+            setDistributionDirections(new EnumFacing[] { level.getBlockState(pos).getValue(BlockFan.FACING).getOpposite() });
 
             SteamNetwork.newOrJoin(this);
             getNetwork().addSteam(steam);

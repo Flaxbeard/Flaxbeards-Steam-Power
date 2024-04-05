@@ -2,6 +2,7 @@ package eiteam.esteemedinnovation.transport.fluid.pipes;
 
 import eiteam.esteemedinnovation.transport.TransportationModule;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class TileEntityColdFluidPipe extends TileEntityTemperatureFluidPipe {
     public TileEntityColdFluidPipe() {
@@ -9,7 +10,7 @@ public class TileEntityColdFluidPipe extends TileEntityTemperatureFluidPipe {
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == TransportationModule.COPPER_PIPE;
     }
 }

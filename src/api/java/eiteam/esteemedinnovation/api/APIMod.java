@@ -1,39 +1,31 @@
 package eiteam.esteemedinnovation.api;
 
+import com.mojang.serialization.Codec;
 import eiteam.esteemedinnovation.api.exosuit.ExosuitEventDelegator;
-import eiteam.esteemedinnovation.api.research.ResearchRecipe;
-import eiteam.esteemedinnovation.api.research.ShapelessResearchRecipe;
-import eiteam.esteemedinnovation.api.steamnet.WorldLoadHandler;
 import eiteam.esteemedinnovation.api.tool.ItemSteamTool;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.oredict.RecipeSorter;
-
-import java.io.File;
+import eiteam.esteemedinnovation.api.tool.SteamToolLootModifier;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 import static eiteam.esteemedinnovation.api.Constants.API_MODID;
 
-@Mod(modid = API_MODID, name = Constants.API_NAME, version = Constants.API_VERSION)
+@Mod(API_MODID)
 public class APIMod {
-    File configDir;
+    private static final DeferredRegister<Codec<? extends IGlobalLootModifier>> GLM_REGISTRAR = DeferredRegister.create(NeoForgeRegistries.GLOBAL_LOOT_MODIFIER_SERIALIZERS, API_MODID);
+    private static final DeferredHolder<Codec<? extends IGlobalLootModifier>, Codec<SteamToolLootModifier>> STEAM_TOOL_LOOT_MODIFIER = GLM_REGISTRAR.register("steam_tool_loot_modifier", SteamToolLootModifier.CODEC);
 
-    @Mod.Instance(API_MODID)
-    public static APIMod INSTANCE;
+    public APIMod(IEventBus modBus) {
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, APIConfig.SPEC);
+        NeoForge.EVENT_BUS.register(new ItemSteamTool.ToolUpgradeEventDelegator());
+        NeoForge.EVENT_BUS.register(new ExosuitEventDelegator());
 
-    @Mod.EventHandler
-    public void onPreInit(FMLPreInitializationEvent event) {
-        configDir = new File(event.getModConfigurationDirectory(), "EsteemedInnovation");
-        APIConfig.load();
-    }
-
-    @Mod.EventHandler
-    public void onInit(FMLInitializationEvent event) {
-        MinecraftForge.EVENT_BUS.register(new ItemSteamTool.ToolUpgradeEventDelegator());
-        MinecraftForge.EVENT_BUS.register(new ExosuitEventDelegator());
-        MinecraftForge.EVENT_BUS.register(new WorldLoadHandler());
-        RecipeSorter.register(API_MODID + ":research_recipe", ResearchRecipe.class, RecipeSorter.Category.SHAPED, "before:forge:shapedore");
-        RecipeSorter.register(API_MODID + ":shapeless_research_recipe", ShapelessResearchRecipe.class, RecipeSorter.Category.SHAPELESS, "before:forge:shapelessore");
+        GLM_REGISTRAR.register(modBus);
     }
 }

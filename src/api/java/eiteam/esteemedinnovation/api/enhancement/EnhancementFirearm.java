@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.api.enhancement;
 
 import eiteam.esteemedinnovation.api.entity.EntityMusketBall;
-import net.minecraft.item.Item;
+import net.minecraft.world.item.Item;
 
 public interface EnhancementFirearm extends Enhancement {
     float getAccuracyChange(Item weapon);

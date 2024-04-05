@@ -2,10 +2,10 @@ package eiteam.esteemedinnovation.api;
 
 import eiteam.esteemedinnovation.api.exosuit.ExosuitArmor;
 import eiteam.esteemedinnovation.api.util.ItemStackUtility;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -19,7 +19,7 @@ public class ChargableUtility {
      * @param entity The entity using the thing.
      * @return Whether it was successfully drained.
      */
-    public static boolean drainSteam(@Nonnull ItemStack stack, int amount, EntityLivingBase entity) {
+    public static boolean drainSteam(@Nonnull ItemStack stack, int amount, LivingEntity entity) {
         Item item = stack.getItem();
         return item instanceof SteamChargable &&
           ((SteamChargable) item).canCharge(stack) &&
@@ -35,10 +35,10 @@ public class ChargableUtility {
      *         It will return as soon as it finds a single piece (so you could have 1 piece with no power, and 1 with
      *         {@code i} power, and it will return true as soon as it finds the one with {@code i} power).
      */
-    public static boolean hasPower(EntityLivingBase entityLiving, int i) {
+    public static boolean hasPower(LivingEntity entityLiving, int i) {
         boolean hasPower = false;
-        for (EntityEquipmentSlot slot : ItemStackUtility.ARMOR_SLOTS) {
-            ItemStack equipment = entityLiving.getItemStackFromSlot(slot);
+        for (EquipmentSlot slot : ItemStackUtility.ARMOR_SLOTS) {
+            ItemStack equipment = entityLiving.getItemBySlot(slot);
             Item item = equipment.getItem();
             if (item instanceof SteamChargable && ((SteamChargable) item).canCharge(equipment)) {
                 hasPower = ((SteamChargable) item).hasPower(equipment, i);
@@ -55,9 +55,9 @@ public class ChargableUtility {
      * @return The {@link SteamChargable#steamPerDurability()} value in the first found {@link SteamChargable} armor
      *         piece that the entity is wearing. 0 if not found.
      */
-    public static int steamPerDurabilityInArmor(EntityLivingBase elb) {
+    public static int steamPerDurabilityInArmor(LivingEntity elb) {
         ItemStack chargableArmor = findFirstChargableArmor(elb);
-        if (chargableArmor != null) {
+        if (chargableArmor != null && chargableArmor.getItem() instanceof SteamChargable) {
             return ((SteamChargable) chargableArmor.getItem()).steamPerDurability();
         }
         return 0;
@@ -68,9 +68,9 @@ public class ChargableUtility {
      * @return The first {@link SteamChargable} item that the entity is wearing. Null if not found.
      */
     @Nullable
-    public static ItemStack findFirstChargableArmor(EntityLivingBase elb) {
-        for (EntityEquipmentSlot slot : ItemStackUtility.ARMOR_SLOTS) {
-            ItemStack equipment = elb.getItemStackFromSlot(slot);
+    public static ItemStack findFirstChargableArmor(LivingEntity elb) {
+        for (EquipmentSlot slot : ItemStackUtility.ARMOR_SLOTS) {
+            ItemStack equipment = elb.getItemBySlot(slot);
             Item item = equipment.getItem();
             if (item instanceof SteamChargable && ((SteamChargable) item).canCharge(equipment)) {
                 return equipment;

@@ -21,10 +21,13 @@ repositories {
 }
 
 base {
+//    todo: only for main jar, not api jar.
     archivesName = project.projectDir.name + "-mc${minecraft_version}-api${api_version}"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft.accessTransformers.file rootProject.file('src/api/resources/META-INF/accesstransformer.cfg')
 
 runs {
     configureEach {
@@ -54,27 +57,31 @@ runs {
 }
 
 sourceSets {
+    api {
+        java {
+            srcDirs = ['src/api/java']
+        }
+        resources {
+            srcDirs = ['src/api/resources']
+        }
+    }
     main {
         resources {
             srcDirs += 'src/generated/resources'
         }
+        compileClasspath += api.output
+        runtimeClasspath += api.output
     }
-    api {
-        java {
-            srcDirs += 'src/api/java'
-        }
-        resources {
-            srcDirs += 'src/api/resources'
-        }
+    test {
+        resources.srcDirs = []
+        compileClasspath += api.output
+        runtimeClasspath += api.output
     }
 }
 
 dependencies {
     apiImplementation "net.neoforged:neoforge:${neoforge_version}"
     implementation "net.neoforged:neoforge:${neoforge_version}"
-    implementation sourceSets.api.getOutput()
-
-    testImplementation sourceSets.api.getOutput()
     testImplementation 'junit:junit:4.12'
 }
 
@@ -90,13 +97,20 @@ tasks.withType(ProcessResources).configureEach {
             minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
             neo_version: neoforge_version, neo_version_range: neoforge_version_range,
             loader_version_range: loader_version_range,
-            mod_id: "esteemedinnovation",
-            mod_name: "Esteemed Innovation",
             mod_license: "CC0",
-            mod_version: mod_version,
             mod_authors: "Esteemed Innovation Team",
-            mod_description: "An innovative tech mod revolving around steam power and pressure.",
     ]
+    if (it.name == 'processApiResources') {
+        replaceProperties.mod_id = api_mod_id
+        replaceProperties.mod_name = api_mod_name
+        replaceProperties.mod_version = api_version
+        replaceProperties.mod_description = api_description
+    } else {
+        replaceProperties.mod_id = mod_mod_id
+        replaceProperties.mod_name = mod_mod_name
+        replaceProperties.mod_version = mod_version
+        replaceProperties.mod_description = mod_description
+    }
     inputs.properties replaceProperties
 
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
@@ -117,19 +131,21 @@ javadoc {
 }
 
 task apiJar(type: Jar) {
+    duplicatesStrategy(DuplicatesStrategy.FAIL)
     archiveVersion = api_version
-    archiveClassifier = 'api'
+    archiveClassifier.set('api')
     from sourceSets.api.output
-    from sourceSets.api.resources
 }
 
 jar {
-    dependsOn compileApiJava
-    from sourceSets.api.output
+    dependsOn(classes, apiClasses)
+    duplicatesStrategy(DuplicatesStrategy.FAIL)
+    //todo
 }
 
 artifacts {
     archives apiJar
+    archives jar
 }
 
 publishing {

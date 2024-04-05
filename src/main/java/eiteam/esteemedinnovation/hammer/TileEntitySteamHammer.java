@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.hammer;
 
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.commons.EsteemedInnovation;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -17,8 +17,9 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class TileEntitySteamHammer extends SteamTransporterTileEntity implements IInventory {
+public class TileEntitySteamHammer extends SteamTransporterBlockEntity implements IInventory {
     public int hammerTicks = 0;
     public String itemName = "";
     public int cost = 0;
@@ -36,7 +37,7 @@ public class TileEntitySteamHammer extends SteamTransporterTileEntity implements
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == HammerModule.STEAM_HAMMER;
     }
 

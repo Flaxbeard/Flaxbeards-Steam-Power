@@ -17,7 +17,7 @@ public class TileEntityFanRenderer extends TileEntitySpecialRenderer<TileEntityF
     public void render(TileEntityFan tile, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         GlStateManager.pushMatrix();
         GlStateManager.translate(x + 0.5, y + 0.5, z + 0.5);
-        IBlockState state = tile.getWorldObj().getBlockState(tile.getPos());
+        IBlockState state = tile.getLevelObj().getBlockState(tile.getPos());
         EnumFacing dir = state.getValue(BlockFan.FACING);
         if (dir == EnumFacing.DOWN) {
             GlStateManager.rotate(-90F, 0, 0, 1);

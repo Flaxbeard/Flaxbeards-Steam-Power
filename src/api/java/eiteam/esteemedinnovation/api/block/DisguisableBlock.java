@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.api.block;
 
-import net.minecraft.block.Block;
+import net.minecraft.world.level.block.Block;
 
 public interface DisguisableBlock {
     Block getDisguiseBlock();

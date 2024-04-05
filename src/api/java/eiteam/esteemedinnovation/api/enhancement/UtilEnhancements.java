@@ -1,10 +1,10 @@
 package eiteam.esteemedinnovation.api.enhancement;
 
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
@@ -34,10 +34,10 @@ public class UtilEnhancements {
     }
 
     public static Enhancement getEnhancementFromItem(@Nonnull ItemStack item) {
-        if (item.hasTagCompound()) {
-            NBTTagCompound nbt = item.getTagCompound();
-            if (nbt.hasKey("enhancements")) {
-                NBTTagCompound enhancements = nbt.getCompoundTag("enhancements");
+        if (item.hasTag()) {
+            CompoundTag nbt = item.getTag();
+            if (nbt.contains("enhancements")) {
+                CompoundTag enhancements = nbt.getCompound("enhancements");
                 return EnhancementRegistry.enhancements.get(enhancements.getString("id"));
             }
         }
@@ -62,30 +62,30 @@ public class UtilEnhancements {
 
     public static String getEnhancementDisplayText(@Nonnull ItemStack item) {
         if (hasEnhancement(item)) {
-            return TextFormatting.RED + new ItemStack(((Item) getEnhancementFromItem(item))).getDisplayName();
+            return ChatFormatting.RED.toString() + new ItemStack(((Item) getEnhancementFromItem(item))).getDisplayName();
         }
         return "";
     }
 
     public static boolean canEnhance(@Nonnull ItemStack item) {
-        return !item.hasTagCompound() || !item.getTagCompound().hasKey("enhancements");
+        return !item.hasTag() || !item.getTag().contains("enhancements");
     }
 
-    public static ItemStack getEnhancedItem(@Nonnull ItemStack item, @Nonnull ItemStack enhancement) {
+    public static ItemStack getEnhancedItem(@Nonnull ItemStack item, @Nonnull Enhancement enhancement) {
         ItemStack output = item.copy();
-        if (!output.hasTagCompound()) {
-            output.setTagCompound(new NBTTagCompound());
+        if (!output.hasTag()) {
+            output.setTag(new CompoundTag());
         }
-        NBTTagCompound enhancements = new NBTTagCompound();
-        enhancements.setString("id", ((Enhancement) enhancement.getItem()).getID());
-        output.getTagCompound().setTag("enhancements", enhancements);
+        CompoundTag enhancements = new CompoundTag();
+        enhancements.putString("id", enhancement.getID());
+        output.getTag().put("enhancements", enhancements);
 
         return output;
     }
 
     public static void removeEnhancement(@Nonnull ItemStack item) {
-        if (item.hasTagCompound() && item.getTagCompound().hasKey("enhancements")) {
-            item.getTagCompound().removeTag("enhancements");
+        if (item.hasTag() && item.getTag().contains("enhancements")) {
+            item.getTag().remove("enhancements");
         }
     }
 }

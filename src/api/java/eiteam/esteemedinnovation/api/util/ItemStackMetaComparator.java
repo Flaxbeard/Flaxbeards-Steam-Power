@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.api.util;
 
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.Comparator;
 
@@ -10,8 +10,8 @@ import java.util.Comparator;
 public class ItemStackMetaComparator implements Comparator<ItemStack> {
     @Override
     public int compare(ItemStack o1, ItemStack o2) {
-        int meta1 = o1.getItemDamage();
-        int meta2 = o2.getItemDamage();
+        int meta1 = o1.getDamageValue();
+        int meta2 = o2.getDamageValue();
         if (meta1 == meta2) {
             return 0;
         } else if (meta1 < meta2) {

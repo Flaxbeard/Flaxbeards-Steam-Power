@@ -4,7 +4,7 @@ import eiteam.esteemedinnovation.api.crucible.CrucibleFormula;
 import eiteam.esteemedinnovation.api.crucible.CrucibleLiquid;
 import eiteam.esteemedinnovation.api.crucible.CrucibleRegistry;
 import eiteam.esteemedinnovation.api.mold.CrucibleMold;
-import eiteam.esteemedinnovation.api.tile.TileEntityTickableSafe;
+import eiteam.esteemedinnovation.api.tile.BlockEntityTickableSafe;
 import eiteam.esteemedinnovation.metalcasting.mold.TileEntityMold;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.ItemStack;
@@ -15,13 +15,14 @@ import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class TileEntityCrucible extends TileEntityTickableSafe {
+public class TileEntityCrucible extends BlockEntityTickableSafe {
     public ArrayList<CrucibleLiquid> contents = new ArrayList<>();
     public HashMap<CrucibleLiquid, Integer> number = new HashMap<>();
     public boolean hasUpdated = true;
@@ -119,7 +120,7 @@ public class TileEntityCrucible extends TileEntityTickableSafe {
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() instanceof BlockCrucible;
     }
 

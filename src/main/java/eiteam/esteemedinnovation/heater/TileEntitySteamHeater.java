@@ -5,6 +5,7 @@ import eiteam.esteemedinnovation.commons.util.WorldHelper;
 import eiteam.esteemedinnovation.transport.steam.TileEntitySteamPipe;
 import net.minecraft.block.BlockFurnace;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -16,6 +17,10 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -85,7 +90,7 @@ public class TileEntitySteamHeater extends TileEntitySteamPipe {
         EnumFacing dir = world.getBlockState(pos).getValue(BlockSteamHeater.FACING);
 
         List<TileEntitySteamHeater> secondaryHeaters = new ArrayList<>();
-        BlockPos offsetPos = getOffsetPos(dir);
+        BlockPos offsetPos = getRelativePos(dir);
         TileEntity tile = world.getTileEntity(offsetPos);
         if (tile == null && getSteamShare() >= CONSUMPTION) {
             AxisAlignedBB heaterAABB = new AxisAlignedBB(0, 0, 1, 1, 1, 21F / 16F);
@@ -160,13 +165,13 @@ public class TileEntitySteamHeater extends TileEntitySteamPipe {
     }
 
     @Override
-    public boolean onWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float hitX, float hitY, float hitZ) {
+    public boolean onWrench(ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float hitX, float hitY, float hitZ) {
         int steam = getSteamShare();
         getNetwork().split(this, true);
         EnumFacing dir = state.getValue(BlockSteamHeater.FACING);
         setValidDistributionDirectionsExcluding(dir);
         BlockPos offsetPos = pos.offset(dir);
-        world.notifyBlockUpdate(offsetPos, world.getBlockState(offsetPos), world.getBlockState(offsetPos), 0);
+        level.notifyBlockUpdate(offsetPos, level.getBlockState(offsetPos), level.getBlockState(offsetPos), 0);
         SteamNetwork.newOrJoin(this);
         getNetwork().addSteam(steam);
         return true;

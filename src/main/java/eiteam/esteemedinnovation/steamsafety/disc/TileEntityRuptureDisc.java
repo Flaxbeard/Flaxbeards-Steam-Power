@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.steamsafety.disc;
 
-import eiteam.esteemedinnovation.api.tile.SteamReactorTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamReactorBlockEntity;
 import eiteam.esteemedinnovation.commons.EsteemedInnovation;
 import eiteam.esteemedinnovation.steamsafety.SafetyModule;
 import net.minecraft.block.state.IBlockState;
@@ -10,8 +10,9 @@ import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.SoundCategory;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class TileEntityRuptureDisc extends SteamReactorTileEntity {
+public class TileEntityRuptureDisc extends SteamReactorBlockEntity {
     private boolean isLeaking = false;
 
     @Override
@@ -30,7 +31,7 @@ public class TileEntityRuptureDisc extends SteamReactorTileEntity {
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == SafetyModule.RUPTURE_DISC;
     }
 

@@ -1,12 +1,13 @@
 package eiteam.esteemedinnovation.api.util;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraftforge.oredict.OreDictionary;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -18,34 +19,30 @@ public class ItemStackUtility {
     /**
      * A performance-friendly cache of all the equipment slots.
      */
-    public static final EntityEquipmentSlot[] EQUIPMENT_SLOTS = EntityEquipmentSlot.values();
+    public static final EquipmentSlot[] EQUIPMENT_SLOTS = EquipmentSlot.values();
 
     /**
      * A performance-friendly cache of all armor slots (excludes hand slots).
      */
-    public static final EntityEquipmentSlot[] ARMOR_SLOTS = new ArrayList<>(Arrays.asList(EQUIPMENT_SLOTS))
+    public static final EquipmentSlot[] ARMOR_SLOTS = new ArrayList<>(Arrays.asList(EQUIPMENT_SLOTS))
       .stream()
-      .filter(slot -> slot.getSlotType() == EntityEquipmentSlot.Type.ARMOR)
+      .filter(slot -> slot.getType() == EquipmentSlot.Type.ARMOR)
       .collect(Collectors.toList())
-      .toArray(new EntityEquipmentSlot[] {});
+      .toArray(new EquipmentSlot[] {});
 
-    /**
-     * Public version of {@link net.minecraft.item.crafting.FurnaceRecipes#compareItemStacks(ItemStack, ItemStack)}
-     */
     public static boolean compareItemStacks(@Nonnull ItemStack stack1, @Nonnull ItemStack stack2) {
-        return stack2.getItem() == stack1.getItem() &&
-                (stack2.getMetadata() == 32767 || stack2.getMetadata() == stack1.getMetadata());
+        return stack2.getItem() == stack1.getItem() && stack2.getDamageValue() == stack1.getDamageValue();
     }
 
     /**
-     * Gets the EntityEquipmentSlot by enum index.
+     * Gets the EquipmentSlot by enum index.
      * @param index The index
      * @return The slot or null.
      */
     @Nullable
-    public static EntityEquipmentSlot getSlotFromSlotIndex(int index) {
-        for (EntityEquipmentSlot slot : EQUIPMENT_SLOTS) {
-            if (slot.getSlotIndex() == index) {
+    public static EquipmentSlot getSlotFromSlotIndex(int index) {
+        for (EquipmentSlot slot : EQUIPMENT_SLOTS) {
+            if (slot.getIndex() == index) {
                 return slot;
             }
         }
@@ -53,8 +50,8 @@ public class ItemStackUtility {
     }
 
     @Nullable
-    public static EntityEquipmentSlot getSlotFromIndex(int index) {
-        for (EntityEquipmentSlot slot : EQUIPMENT_SLOTS) {
+    public static EquipmentSlot getSlotFromIndex(int index) {
+        for (EquipmentSlot slot : EQUIPMENT_SLOTS) {
             if (slot.getIndex() == index) {
                 return slot;
             }
@@ -68,9 +65,9 @@ public class ItemStackUtility {
      * @return The main hand itemstack, offhand itemstack, or null if both were empty itemstacks.
      */
     @Nullable
-    public static ItemStack getHeldItemStack(EntityPlayer player) {
-        ItemStack mainHand = player.getHeldItemMainhand();
-        ItemStack offHand = player.getHeldItemOffhand();
+    public static ItemStack getHeldItemStack(Player player) {
+        ItemStack mainHand = player.getMainHandItem();
+        ItemStack offHand = player.getOffhandItem();
 
         if (mainHand.isEmpty()) {
             return offHand.isEmpty() ? ItemStack.EMPTY : offHand;
@@ -85,7 +82,7 @@ public class ItemStackUtility {
      * @param check The item
      * @return boolean
      */
-    public static boolean inventoryHasItem(IInventory inventory, Item check) {
+    public static boolean inventoryHasItem(Container inventory, Item check) {
         return findItemStackFromInventory(inventory, check) != null;
     }
 
@@ -96,9 +93,9 @@ public class ItemStackUtility {
      * @return The itemstack, or null
      */
     @Nullable
-    public static ItemStack findItemStackFromInventory(IInventory haystack, Item needle) {
-        for (int slot = 0; slot < haystack.getSizeInventory(); slot++) {
-            ItemStack inSlot = haystack.getStackInSlot(slot);
+    public static ItemStack findItemStackFromInventory(Container haystack, Item needle) {
+        for (int slot = 0; slot < haystack.getContainerSize(); slot++) {
+            ItemStack inSlot = haystack.getItem(slot);
             if (inSlot.isEmpty()) {
                 continue;
             }
@@ -115,38 +112,38 @@ public class ItemStackUtility {
      * @param inventory The player's inventory
      * @param item The item to consume.
      */
-    public static void consumePlayerInventoryItem(InventoryPlayer inventory, Item item) {
-        ItemStack stack = null;
-        for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
-            ItemStack inSlot = inventory.getStackInSlot(slot);
-            if (inSlot.isEmpty()) {
-                continue;
-            }
-            if (inSlot.getItem() == item) {
-                stack = inSlot;
-            }
-        }
+    public static void consumePlayerInventoryItem(Inventory inventory, Item item) {
+        ItemStack stack = findItemStackFromInventory(inventory, item);
         if (stack == null) {
             return;
         }
         stack.shrink(1);
 
         if (stack.isEmpty()) {
-            inventory.deleteStack(stack);
+            inventory.removeItem(stack);
         }
     }
 
     /**
      * @param item The ItemStack to check
-     * @param oreDict The OreDictionary value to check
-     * @return Whether the provided Item (metadata specific) is in the OreDictionary under the provided oreDict value.
+     * @param tag The tag to check
+     * @return Whether the provided ItemStack is tagged as provided.
      */
-    public static boolean isItemOreDictedAs(ItemStack item, String oreDict) {
-        for (ItemStack i : OreDictionary.getOres(oreDict)) {
-            if (i.isItemEqual(item)) {
-                return true;
-            }
-        }
-        return false;
+    public static boolean isItemTaggedAs(ItemStack item, TagKey<Item> tag) {
+        return item.getTags().anyMatch(t -> t.equals(tag));
+    }
+
+    /**
+     * @param slot The equipment slot
+     * @return The corresponding armor type for the provided equipment slot. Null if offhand or mainhand slots are provided.
+     */
+    public static ArmorItem.Type equipmentSlotToArmorType(EquipmentSlot slot) {
+        return switch (slot) {
+            case FEET -> ArmorItem.Type.BOOTS;
+            case LEGS -> ArmorItem.Type.LEGGINGS;
+            case CHEST -> ArmorItem.Type.CHESTPLATE;
+            case HEAD -> ArmorItem.Type.HELMET;
+            case MAINHAND, OFFHAND -> null;
+        };
     }
 }

@@ -3,6 +3,7 @@ package eiteam.esteemedinnovation.storage.steam;
 import eiteam.esteemedinnovation.api.steamnet.SteamNetwork;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class TileEntityCreativeTank extends TileEntitySteamTank {
     public TileEntityCreativeTank() {
@@ -17,7 +18,7 @@ public class TileEntityCreativeTank extends TileEntitySteamTank {
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return super.canUpdate(target) && target.getValue(BlockSteamTank.IS_CREATIVE);
     }
 

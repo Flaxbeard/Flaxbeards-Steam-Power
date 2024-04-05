@@ -1,21 +1,26 @@
 package eiteam.esteemedinnovation.api.tool;
 
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.world.BlockEvent;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.Tiers;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.neoforged.neoforge.event.entity.living.LivingAttackEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 
 import javax.annotation.Nonnull;
 
 /**
  * This interface is used to create your own upgrades for {@link SteamTool SteamTools}. Below describes how you can
- * go about creating and registering your own own upgrades.
+ * go about creating and registering your own upgrades.
  *
  * <h2>Creating an upgrade</h2>
  * In most cases, you will need to create a new custom object/class in order to create a new upgrade for a steam tool.
@@ -38,8 +43,8 @@ import javax.annotation.Nonnull;
  * <h4>Tool strength</h4>
  * There are two methods that allow the upgrade to modify the tool's strength:
  * <ul>
- *     <li>{@link SteamToolUpgrade#getToolStrength(IBlockState, ItemStack, ItemStack)}</li>
- *     <li>{@link SteamToolUpgrade#modifiesToolStrength()}</li>
+ *     <li>{@link SteamToolUpgrade#getToolTier(BlockState, ItemStack, ItemStack)}</li>
+ *     <li>{@link SteamToolUpgrade#modifiesToolTier()}</li>
  * </ul>
  *
  * <h2>Registering an upgrade</h2>
@@ -60,6 +65,7 @@ public interface SteamToolUpgrade {
      * @param tool The ItemStack containing the tool
      * @return The information string. Can be null, expect null.
      */
+    @Deprecated(forRemoval = true) // Specify a .info lang key instead.
     String getInformation(@Nonnull ItemStack me, @Nonnull ItemStack tool);
 
     /**
@@ -103,21 +109,12 @@ public interface SteamToolUpgrade {
     }
 
     /**
-     * Called from {@link ItemSteamTool.ToolUpgradeEventDelegator#onHarvestDrops(BlockEvent.HarvestDropsEvent)}
-     * for every upgrade in the steam tool.
-     * @param event The actual event container. A few things in the event are sanitized before this method is called.
-     *              <p>
-     *              The things sanitized/checked before this is called:
-     *              <ul>
-     *                  <li>The player ({@link BlockEvent.HarvestDropsEvent#getHarvester()})</li>
-     *                  <li>The blockstate and block for the blockstate ({@link BlockEvent.HarvestDropsEvent#getState()} and {@link IBlockState#getBlock()}</li>
-     *                  <li>The tool being used to harvest (which is passed as a parameter to this method). The nullness
-     *                      of its item is also checked, as well as whether it is actually a {@link SteamTool}.</li>
-     *              </ul>
-     * @param toolStack The tool in the player's main hand, confirmed to contain a {@link SteamTool} and be nonnull.
-     * @param thisUpgradeStack The ItemStack containing this upgrade.
+     * Called from {@link SteamToolLootModifier#apply(ObjectArrayList, LootContext)} for every upgrade in the steam tool.
+     * @param generatedLoot The loot. Modify in place.
+     * @param context The loot context. Use the TOOL loot context param to get the tool stack, and from there you can
+     *                get the list of upgrades in the tool.
      */
-    default void onPlayerHarvestDropsWithTool(BlockEvent.HarvestDropsEvent event, @Nonnull ItemStack toolStack, @Nonnull ItemStack thisUpgradeStack) {}
+    default void modifyLoot(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {}
 
     /**
      * Called from {@link ItemSteamTool.ToolUpgradeEventDelegator#onBlockBreakSpeedUpdate(PlayerEvent.BreakSpeed)}
@@ -128,7 +125,7 @@ public interface SteamToolUpgrade {
      *              <ul>
      *                  <li>The block and blockstate at the position are not null.</li>
      *              </ul>
-     *              Use {@link net.minecraftforge.event.entity.player.PlayerEvent.BreakSpeed#setNewSpeed(float)} to set
+     *              Use {@link net.neoforged.neoforge.event.entity.player.PlayerEvent.BreakSpeed#setNewSpeed(float)} to set
      *              the new speed value, just as you would if you had subscribed to this event normally.
      * @param toolStack The ItemStack containing the tool (player's main hand). Confirmed to be nonnull and contain a
      *                  {@link SteamTool}.
@@ -170,28 +167,28 @@ public interface SteamToolUpgrade {
      * @param thisUpgradeStack The ItemStack containing this upgrade.
      * @return Return false to cancel the attack and prevent any other processing from happening.
      */
-    default boolean onAttackWithTool(@Nonnull EntityPlayer attacker, @Nonnull EntityLivingBase victim, DamageSource damageSource, @Nonnull ItemStack toolStack, @Nonnull ItemStack thisUpgradeStack) {
+    default boolean onAttackWithTool(@Nonnull Player attacker, @Nonnull LivingEntity victim, DamageSource damageSource, @Nonnull ItemStack toolStack, @Nonnull ItemStack thisUpgradeStack) {
         return true;
     }
 
     /**
-     * Gets the harvest level for a tool with this upgrade installed. This is called only if {@link #modifiesToolStrength()}
+     * Gets the tool tier for a tool with this upgrade installed. This is called only if {@link #modifiesToolTier()}
      * returns true.
      * @param state The block state being used to mine.
      * @param toolStack The ItemStack for the tool being used to mine.
      * @param upgradeStack The ItemStack for the upgrade.
-     * @return The strength against the block.
+     * @return The new tool tier against the block. Defaults to Iron.
      */
-    default int getToolStrength(IBlockState state, @Nonnull ItemStack toolStack, @Nonnull ItemStack upgradeStack) {
-        return 0;
+    default Tier getToolTier(BlockState state, @Nonnull ItemStack toolStack, @Nonnull ItemStack upgradeStack) {
+        return Tiers.IRON;
     }
 
     /**
-     * @return If true, {@link #getToolStrength(IBlockState, ItemStack, ItemStack)} will be used for the tool's
-     *         {@link net.minecraft.item.Item#canHarvestBlock(IBlockState, ItemStack)} implementation instead of the
-     *         standard value.
+     * @return If true, {@link #getToolTier(BlockState, ItemStack, ItemStack)} will be used for the tool's
+     *         {@link Item#isCorrectToolForDrops(ItemStack, BlockState)} implementation instead of the
+     *         base value.
      */
-    default boolean modifiesToolStrength() {
+    default boolean modifiesToolTier() {
         return false;
     }
 }

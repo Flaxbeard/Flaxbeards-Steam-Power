@@ -16,7 +16,7 @@ public class TileEntitySteamChargerRenderer extends TileEntitySpecialRenderer<Ti
             return;
         }
         Minecraft mc = Minecraft.getMinecraft();
-        EnumFacing facing = charger.getWorldObj().getBlockState(charger.getPos()).getValue(BlockSteamCharger.FACING);
+        EnumFacing facing = charger.getLevelObj().getBlockState(charger.getPos()).getValue(BlockSteamCharger.FACING);
         RenderHelper.enableStandardItemLighting();
         GlStateManager.enableLighting();
         GlStateManager.pushMatrix();

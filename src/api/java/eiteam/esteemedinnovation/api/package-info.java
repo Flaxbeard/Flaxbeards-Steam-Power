@@ -6,9 +6,7 @@
  * their own systems similar to those within the mod.
  *
  * <h2>Prerequisites</h2>
- * It is crucial that you have at least a basic understanding of Java and the Minecraft Forge API. A list of
- * recommended readings (and tutorial series) can be
- * found <a href="https://forum.feed-the-beast.com/threads/.51288/">here</a>.
+ * It is crucial that you have at least a basic understanding of Java and the NeoForge API.
  *
  * <h2>Getting started</h2>
  * In order to add the EI API to your project, add the following to your Gradle buildscript. This does not go in the
@@ -30,6 +28,6 @@
  * <p>
  * The actual mod source is not hosted in the maven repository. If you need the whole mod, simply download it from
  * CurseForge and add it to your repository as a library.
- * @see <a href="https://ftb.gamepedia.com/Esteemed_Innovation_(Mod)">the FTB wiki</a> for the documentation of the mod.
+ * @see <a href="https://ftb.fandom.com/Esteemed_Innovation_(Mod)">the FTB wiki</a> for the documentation of the mod.
  */
 package eiteam.esteemedinnovation.api;

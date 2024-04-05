@@ -1,11 +1,12 @@
 package eiteam.esteemedinnovation.converter;
 
 import eiteam.esteemedinnovation.api.steamnet.SteamNetwork;
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.api.wrench.Wrenchable;
 import eiteam.esteemedinnovation.api.util.FluidHelper;
 import eiteam.esteemedinnovation.commons.CrossMod;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -16,6 +17,10 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
@@ -26,7 +31,7 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 
 import javax.annotation.Nullable;
 
-public class TileEntityFluidSteamConverter extends SteamTransporterTileEntity implements Wrenchable {
+public class TileEntityFluidSteamConverter extends SteamTransporterBlockEntity implements Wrenchable {
     public int runTicks = 0;
     private boolean lastRunning = false;
 
@@ -88,7 +93,7 @@ public class TileEntityFluidSteamConverter extends SteamTransporterTileEntity im
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == ConverterModule.PRESSURE_CONVERTER;
     }
 
@@ -108,7 +113,7 @@ public class TileEntityFluidSteamConverter extends SteamTransporterTileEntity im
         });
 
         if (fluid != null && tank != null && pushing) {
-            TileEntity tileEntity = world.getTileEntity(getOffsetPos(dir));
+            TileEntity tileEntity = world.getTileEntity(getRelativePos(dir));
             if (tileEntity != null) {
                 SteamNetwork steamNetwork = getNetwork();
                 IFluidHandler handler = FluidHelper.getFluidHandler(tileEntity, dir);
@@ -138,7 +143,7 @@ public class TileEntityFluidSteamConverter extends SteamTransporterTileEntity im
     }
 
     @Override
-    public boolean onWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing side, IBlockState state, float hitX, float hitY, float hitZ) {
+    public boolean onWrench(ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction side, BlockState state, float hitX, float hitY, float hitZ) {
         if (player.isSneaking()) {
             pushing = !pushing;
         } else {

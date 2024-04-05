@@ -1,37 +1,19 @@
 package eiteam.esteemedinnovation.api.exosuit;
 
-import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.oredict.OreDictionary;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
 
 public class UtilPlates {
-    public static ExosuitPlate getPlate(ItemStack item) {
-        for (ExosuitPlate plate : ExosuitRegistry.plates.values()) {
-            if (plate.getItem() instanceof ItemStack) {
-                if (((ItemStack) plate.getItem()).isItemEqual(item)) {
-                    return plate;
-                }
-            }
-            if (plate.getItem() instanceof String) {
-                for (ItemStack i : OreDictionary.getOres(((String) plate.getItem()))) {
-                    if (i.isItemEqual(item)) {
-                        return plate;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    public static ResourceLocation getIconFromPlate(String string, ExosuitArmor item) {
-        ExosuitPlate plate = ExosuitRegistry.plates.get(string);
+    public static ResourceLocation getIconFromPlate(String name, ExosuitArmor item) {
+        ExosuitPlate plate = ExosuitRegistry.plates.get(name);
         return plate.getIcon(item);
     }
 
-    public static String getArmorLocationFromPlate(String string, ExosuitArmor item, EntityEquipmentSlot armorType) {
-        ExosuitPlate plate = ExosuitRegistry.plates.get(string);
+    public static String getArmorLocationFromPlate(String name, ExosuitArmor item, EquipmentSlot armorType) {
+        ExosuitPlate plate = ExosuitRegistry.plates.get(name);
         return plate.getArmorLocation(item, armorType);
     }
 
@@ -45,13 +27,13 @@ public class UtilPlates {
      * @param exosuitPiece The Exosuit Piece to remove the plates from.
      */
     public static void removePlate(ItemStack exosuitPiece) {
-        if (exosuitPiece.hasTagCompound()) {
-            NBTTagCompound nbt = exosuitPiece.getTagCompound();
-            if (nbt.hasKey("plate")) {
-                nbt.removeTag("plate");
+        if (exosuitPiece.hasTag()) {
+            CompoundTag nbt = exosuitPiece.getTag();
+            if (nbt.contains("plate")) {
+                nbt.remove("plate");
             }
-            if (nbt.hasKey("inv") && nbt.getCompoundTag("inv").hasKey("1")) {
-                nbt.getCompoundTag("inv").removeTag("1");
+            if (nbt.contains("inv") && nbt.getCompound("inv").contains("1")) {
+                nbt.getCompound("inv").remove("1");
             }
         }
     }

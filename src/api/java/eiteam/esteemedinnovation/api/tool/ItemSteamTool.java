@@ -1,84 +1,68 @@
 package eiteam.esteemedinnovation.api.tool;
 
-import com.google.common.collect.ImmutableSet;
 import eiteam.esteemedinnovation.api.ChargableUtility;
 import eiteam.esteemedinnovation.api.Constants;
 import eiteam.esteemedinnovation.api.Engineerable;
 import eiteam.esteemedinnovation.api.SteamChargable;
-import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemTool;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.*;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.world.World;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.world.BlockEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.*;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.TierSortingRegistry;
+import net.neoforged.neoforge.event.entity.living.LivingAttackEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
+import javax.annotation.Nullable;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Set;
 
-public abstract class ItemSteamTool extends ItemTool implements SteamChargable, Engineerable, SteamTool {
+public abstract class ItemSteamTool extends DiggerItem implements Engineerable, SteamTool {
     private boolean hasBrokenBlock = false;
     protected static final ResourceLocation LARGE_ICONS = new ResourceLocation(Constants.EI_MODID + ":textures/gui/engineering2.png");
     private IdentityHashMap<ItemStack, MutablePair<Integer, Integer>> ticksSpeed = new IdentityHashMap<>();
-    /**
-     * The Item used in getStrVsBlock. Basically, assuming there are no strength modifying upgrades, this item's {@link #getDestroySpeed(ItemStack, IBlockState)}
-     * will be called to determine the strength (along with the speed, of course).
-     */
-    private final Item itemForStrength;
 
-    protected ItemSteamTool(float attackDamageIn, float attackSpeedIn, ToolMaterial materialIn, Set<Block> effectiveBlocksIn, Item itemForStrength) {
-        super(attackDamageIn, attackSpeedIn, materialIn, effectiveBlocksIn);
-        this.itemForStrength = itemForStrength;
-    }
-
-    protected Item.ToolMaterial getToolMaterial() {
-        return toolMaterial;
-    }
-
-    @Nonnull
-    @Override
-    public Set<String> getToolClasses(ItemStack stack) {
-        return ImmutableSet.of(toolClass());
+    protected ItemSteamTool(float attackDamage, float attackSpeed, Tier tier, TagKey<Block> effectiveBlocks, Item.Properties properties) {
+        super(attackDamage, attackSpeed, tier, effectiveBlocks, properties);
     }
 
     @Override
-    public boolean canHarvestBlock(@Nonnull IBlockState state, ItemStack stack) {
-        int blockHarvestLevel = state.getBlock().getHarvestLevel(state);
-        if (blockHarvestLevel < 0) {
+    public boolean isCorrectToolForDrops(@Nonnull ItemStack stack, BlockState state) {
+        if (!state.is(blocks)) {
             return false;
         }
         for (ItemStack upgradeStack : UtilSteamTool.getUpgradeStacks(stack)) {
             SteamToolUpgrade upgrade = (SteamToolUpgrade) upgradeStack.getItem();
-            if (upgrade.modifiesToolStrength()) {
-                return upgrade.getToolStrength(state, stack, upgradeStack) >= blockHarvestLevel;
+            if (upgrade.modifiesToolTier()) {
+                Tier upgradedTier = upgrade.getToolTier(state, stack, upgradeStack);
+                if (TierSortingRegistry.isCorrectTierForDrops(upgradedTier, state)) {
+                    return true;
+                }
             }
         }
-        return getToolMaterial().getHarvestLevel() >= blockHarvestLevel;
+        return TierSortingRegistry.isCorrectTierForDrops(getTier(), state);
     }
 
     @Override
-    public boolean shouldCauseReequipAnimation(ItemStack oldStack, @Nonnull ItemStack newStack, boolean slotChanged) {
+    public boolean shouldCauseReequipAnimation(@Nonnull ItemStack oldStack, @Nonnull ItemStack newStack, boolean slotChanged) {
         /*
          We have to check the upgrades so that the models reload when you switch between two tools of the same type with
          different upgrades. Otherwise, it would appear to have oldStack's upgrades on it.
@@ -87,25 +71,19 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
     }
 
     @Override
-    @SideOnly(Side.CLIENT)
-    public void addInformation(ItemStack me, World world, List<String> list, ITooltipFlag tooltipFlag) {
-        super.addInformation(me, world, list, tooltipFlag);
-        list.add(TextFormatting.WHITE + "" + (me.getMaxDamage() - me.getItemDamage()) * steamPerDurability() + "/" + me.getMaxDamage() * steamPerDurability() + " SU");
-        ArrayList<ItemStack> upgradeStacks = UtilSteamTool.getUpgradeStacks(me);
-        ArrayList<String> upgradeStrings = UtilSteamTool.getInformationFromStacks(upgradeStacks, getRedSlot(), me);
-
-        for (String string : upgradeStrings) {
-            list.add(string);
-        }
+    public void appendHoverText(@Nonnull ItemStack me, @Nullable Level level, @Nonnull List<Component> tooltip, @Nonnull TooltipFlag flag) {
+        super.appendHoverText(me, level, tooltip, flag);
+        tooltip.add(Component.literal((me.getMaxDamage() - me.getDamageValue()) * steamPerDurability() + "/" + me.getMaxDamage() * steamPerDurability() + " SU").withStyle(ChatFormatting.WHITE));
+        tooltip.addAll(UtilSteamTool.getUpgradeTooltipComponents(me, getRedSlot()));
     }
 
     @Override
-    public boolean onBlockDestroyed(@Nonnull ItemStack stack, World world, @Nonnull IBlockState state, @Nonnull BlockPos pos, @Nonnull EntityLivingBase entityLiving) {
-        NBTTagCompound nbt = UtilSteamTool.checkNBT(stack);
+    public boolean mineBlock(@Nonnull ItemStack stack, @Nonnull Level level, @Nonnull BlockState state, @Nonnull BlockPos pos, @Nonnull LivingEntity entityLiving) {
+        CompoundTag nbt = UtilSteamTool.checkNBT(stack);
         if (ticksSpeed.containsKey(stack)) {
             MutablePair<Integer, Integer> pair = ticksSpeed.get(stack);
-            nbt.setInteger("Ticks", pair.getLeft());
-            nbt.setInteger("Speed", pair.getRight());
+            nbt.putInt("Ticks", pair.getLeft());
+            nbt.putInt("Speed", pair.getRight());
             hasBrokenBlock = true;
             ticksSpeed.remove(stack);
         }
@@ -113,17 +91,17 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
     }
 
     @Override
-    public void onUpdate(ItemStack stack, World world, Entity player, int itemSlot, boolean isSelected) {
-        if (player instanceof EntityPlayer) {
-            NBTTagCompound nbt = UtilSteamTool.checkNBT(stack);
-            int ticks = nbt.getInteger("Ticks");
-            int speed = nbt.getInteger("Speed");
+    public void inventoryTick(@Nonnull ItemStack stack, @Nonnull Level level, @Nonnull Entity entity, int itemSlot, boolean isSelected) {
+        if (entity instanceof Player player) {
+            CompoundTag nbt = UtilSteamTool.checkNBT(stack);
+            int ticks = nbt.getInt("Ticks");
+            int speed = nbt.getInt("Speed");
 
             if (hasBrokenBlock) {
                 speed -= 10;
                 hasBrokenBlock = false;
             }
-            int addedTicks = Math.min(((Double) Math.floor((double) speed / 1000D * 25D)).intValue(), 50);
+            int addedTicks = Math.min(((Double) Math.floor(speed / 1000D * 25D)).intValue(), 50);
             ticks += addedTicks;
             if (isWound(stack)) {
                 speed--;
@@ -133,8 +111,8 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
                 ticks--;
             }
 
-            ticks = ticks % 100;
-            if (((EntityLivingBase) player).isSwingInProgress) {
+            ticks %= 100;
+            if (player.swinging) {
                 if (ticksSpeed.containsKey(stack)) {
                     ticksSpeed.get(stack).setLeft(ticks);
                     ticksSpeed.get(stack).setRight(speed);
@@ -142,20 +120,20 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
                     ticksSpeed.put(stack, MutablePair.of(ticks, speed));
                 }
             } else {
-                nbt.setInteger("Ticks", ticks);
-                nbt.setInteger("Speed", speed);
+                nbt.putInt("Ticks", ticks);
+                nbt.putInt("Speed", speed);
             }
         }
     }
 
     @Nonnull
     @Override
-    public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, @Nonnull EnumHand hand) {
-        ItemStack stack = player.getHeldItem(hand);
-        NBTTagCompound nbt = UtilSteamTool.checkNBT(stack);
+    public InteractionResultHolder<ItemStack> use(@Nonnull Level level, Player player, @Nonnull InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        CompoundTag nbt = UtilSteamTool.checkNBT(stack);
 
-        int ticks = nbt.getInteger("Ticks");
-        int speed = nbt.getInteger("Speed");
+        int ticks = nbt.getInt("Ticks");
+        int speed = nbt.getInt("Speed");
         boolean result = false;
         if (speed <= 1000) {
             speed += Math.min(90, 1000 - speed);
@@ -163,14 +141,14 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
         }
 
         if (result) {
-            nbt.setInteger("Ticks", ticks);
-            nbt.setInteger("Speed", speed);
+            nbt.putInt("Ticks", ticks);
+            nbt.putInt("Speed", speed);
         }
-        return ActionResult.newResult(EnumActionResult.PASS, stack);
+        return InteractionResultHolder.pass(stack);
     }
 
     @Override
-    public boolean hitEntity(ItemStack par1ItemStack, EntityLivingBase par2EntityLivingBase, @Nonnull EntityLivingBase par3EntityLivingBase) {
+    public boolean hurtEnemy(@Nonnull ItemStack me, @Nonnull LivingEntity victim, @Nonnull LivingEntity attacker) {
         return true;
     }
 
@@ -179,7 +157,7 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
      * @return The mining speed against a valid block
      */
     protected float getSpeed(ItemStack itemStack) {
-        return getSpeed(UtilSteamTool.checkNBT(itemStack).getInteger("Speed"));
+        return getSpeed(UtilSteamTool.checkNBT(itemStack).getInt("Speed"));
     }
 
     /**
@@ -191,10 +169,10 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
     }
 
     @Override
-    public float getDestroySpeed(@Nonnull ItemStack stack, IBlockState state) {
-        NBTTagCompound nbt = UtilSteamTool.checkNBT(stack);
-        int speed = nbt.getInteger("Speed");
-        return itemForStrength.getDestroySpeed(stack, state) != 1F && speed > 0 ? getSpeed(speed) : 0F;
+    public float getDestroySpeed(@Nonnull ItemStack stack, @Nonnull BlockState state) {
+        CompoundTag nbt = UtilSteamTool.checkNBT(stack);
+        int speed = nbt.getInt("Speed");
+        return getTier().getSpeed() != 1f && speed > 0 ? getSpeed(speed) : 0f;
     }
 
     @Override
@@ -203,15 +181,15 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
     }
 
     @Override
-    public boolean addSteam(ItemStack me, int amount, EntityLivingBase entity) {
+    public boolean addSteam(ItemStack me, int amount, LivingEntity entity) {
         int trueAmount = -amount / steamPerDurability();
-        int newAmount = me.getItemDamage() + trueAmount;
+        int newAmount = me.getDamageValue() + trueAmount;
         if (newAmount <= 0) {
-            me.setItemDamage(0);
+            me.setDamageValue(0);
             return false;
         }
         if (me.getMaxDamage() >= newAmount) {
-            me.setItemDamage(newAmount);
+            me.setDamageValue(newAmount);
             return true;
         }
         if (amount < 0) {
@@ -231,17 +209,17 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
     @Override
     public boolean hasPower(ItemStack me, int powerNeeded) {
         int truePowerNeeded = -powerNeeded / steamPerDurability();
-        return me.getItemDamage() >= truePowerNeeded;
+        return me.getDamageValue() >= truePowerNeeded;
     }
 
     @Override
     public boolean needsPower(ItemStack me, int powerNeeded) {
         int truePowerNeeded = -powerNeeded / steamPerDurability();
-        return truePowerNeeded >= (me.getMaxDamage() - me.getItemDamage());
+        return truePowerNeeded >= (me.getMaxDamage() - me.getDamageValue());
     }
 
     @Override
-    public boolean drainSteam(ItemStack me, int amountToDrain, EntityLivingBase entity) {
+    public boolean drainSteam(ItemStack me, int amountToDrain, LivingEntity entity) {
         return addSteam(me, -amountToDrain, entity);
     }
 
@@ -252,36 +230,36 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
 
     @Override
     public ItemStack getStackInSlot(ItemStack me, int slot) {
-        if (me.hasTagCompound() && me.getTagCompound().hasKey("upgrades") &&
-          me.getTagCompound().getCompoundTag("upgrades").hasKey(Integer.toString(slot))) {
-            return new ItemStack(me.getTagCompound().getCompoundTag("upgrades").getCompoundTag(Integer.toString(slot)));
+        if (me.hasTag() && me.getTag().contains("upgrades") &&
+          me.getTag().getCompound("upgrades").contains(Integer.toString(slot))) {
+            return ItemStack.of(me.getTag().getCompound("upgrades").getCompound(Integer.toString(slot)));
         }
         return ItemStack.EMPTY;
     }
 
     @Override
-    public void setInventorySlotContents(ItemStack me, int var1, ItemStack stack) {
-        UtilSteamTool.setNBTInventory(me, var1, stack);
+    public void setInventorySlotContents(ItemStack me, int slot, ItemStack stack) {
+        UtilSteamTool.setNBTInventory(me, slot, stack);
     }
 
     @Override
-    public boolean isItemValidForSlot(ItemStack me, int var1, ItemStack var2) {
+    public boolean isItemValidForSlot(ItemStack me, int slot, ItemStack var2) {
         return true;
     }
 
     @Override
-    public ItemStack decrStackSize(ItemStack me, int var1, int var2) {
-        if (!getStackInSlot(me, var1).isEmpty()) {
+    public ItemStack decrStackSize(ItemStack me, int slot, int amount) {
+        if (!getStackInSlot(me, slot).isEmpty()) {
             ItemStack stack;
-            if (getStackInSlot(me, var1).getCount() <= var2) {
-                stack = getStackInSlot(me, var1);
-                setInventorySlotContents(me, var1, ItemStack.EMPTY);
+            if (getStackInSlot(me, slot).getCount() <= amount) {
+                stack = getStackInSlot(me, slot);
+                setInventorySlotContents(me, slot, ItemStack.EMPTY);
             } else {
-                stack = getStackInSlot(me, var1).splitStack(var2);
-                setInventorySlotContents(me, var1, getStackInSlot(me, var1));
+                stack = getStackInSlot(me, slot).split(amount);
+                setInventorySlotContents(me, slot, getStackInSlot(me, slot));
 
-                if (getStackInSlot(me, var1).isEmpty()) {
-                    setInventorySlotContents(me, var1, ItemStack.EMPTY);
+                if (getStackInSlot(me, slot).isEmpty()) {
+                    setInventorySlotContents(me, slot, ItemStack.EMPTY);
                 }
             }
             return stack;
@@ -291,18 +269,19 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
     }
 
     @Override
-    public void drawSlot(GuiContainer gui, int slotnum, int i, int j) {
-        gui.mc.getTextureManager().bindTexture(Constants.ENG_GUI_TEXTURES);
-        switch (slotnum) {
-            case 0: {
-                gui.drawTexturedModalRect(i, j, 176, 0, 18, 18);
-                break;
-            }
-            case 1: {
-                gui.drawTexturedModalRect(i, j, 176, 0, 18, 18);
-                break;
-            }
-        }
+    public void drawSlot(ContainerScreen gui, int slotnum, int i, int j) {
+//        todo
+//        gui.getMinecraft().getTextureManager().bindTexture(Constants.ENG_GUI_TEXTURES);
+//        switch (slotnum) {
+//            case 0: {
+//                gui.drawTexturedModalRect(i, j, 176, 0, 18, 18);
+//                break;
+//            }
+//            case 1: {
+//                gui.drawTexturedModalRect(i, j, 176, 0, 18, 18);
+//                break;
+//            }
+//        }
     }
 
     @Override
@@ -318,18 +297,12 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
 
     @Override
     public boolean isWound(ItemStack stack) {
-        return UtilSteamTool.checkNBT(stack).getInteger("Speed") > 0;
+        return UtilSteamTool.checkNBT(stack).getInt("Speed") > 0;
     }
 
     @Override
     public boolean hasUpgrade(ItemStack me, Item check) {
         return UtilSteamTool.hasUpgrade(me, check);
-    }
-
-    @Nonnull
-    @Override
-    public RayTraceResult rayTrace(World world, EntityPlayer player, boolean useLiquids) {
-        return super.rayTrace(world, player, useLiquids);
     }
 
     /**
@@ -356,39 +329,16 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
         }
 
         /**
-         * Calls {@link SteamToolUpgrade#onPlayerHarvestDropsWithTool(BlockEvent.HarvestDropsEvent, ItemStack, ItemStack)}
-         * for every upgrade in the tool.
-         */
-        @SubscribeEvent
-        public void onHarvestDrops(BlockEvent.HarvestDropsEvent event) {
-            EntityPlayer player = event.getHarvester();
-            IBlockState state = event.getState();
-            Block block = state.getBlock();
-            if (player == null || block == null) {
-                return;
-            }
-            ItemStack equipped = player.getHeldItemMainhand();
-            if (!isToolOkay(equipped)) {
-                return;
-            }
-            for (ItemStack upgradeStack : UtilSteamTool.getUpgradeStacks(equipped)) {
-                SteamToolUpgrade upgrade = (SteamToolUpgrade) upgradeStack.getItem();
-                upgrade.onPlayerHarvestDropsWithTool(event, equipped, upgradeStack);
-            }
-        }
-
-        /**
          * Calls {@link SteamToolUpgrade#onUpdateBreakSpeedWithTool(PlayerEvent.BreakSpeed, ItemStack, ItemStack)}
          * for every upgrade in the tool.
          */
         @SubscribeEvent
         public void onBlockBreakSpeedUpdate(PlayerEvent.BreakSpeed event) {
-            ItemStack equipped = event.getEntityPlayer().getHeldItemMainhand();
-            BlockPos pos = event.getPos();
-            World world = event.getEntity().world;
-            IBlockState state = world.getBlockState(pos);
-            Block block = state.getBlock();
-            if (block == null || !isToolOkay(equipped)) {
+            ItemStack equipped = event.getEntity().getMainHandItem();
+            BlockPos pos = event.getPosition().orElseThrow();
+            Level level = event.getEntity().level();
+            BlockState state = level.getBlockState(pos);
+            if (state.isAir() || !isToolOkay(equipped)) {
                 return;
             }
 
@@ -404,11 +354,8 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
          */
         @SubscribeEvent
         public void onBlockBreak(BlockEvent.BreakEvent event) {
-            EntityPlayer player = event.getPlayer();
-            if (player == null) {
-                return;
-            }
-            ItemStack equipped = player.getHeldItemMainhand();
+            Player player = event.getPlayer();
+            ItemStack equipped = player.getMainHandItem();
             if (!isToolOkay(equipped)) {
                 return;
             }
@@ -422,25 +369,24 @@ public abstract class ItemSteamTool extends ItemTool implements SteamChargable, 
         }
 
         /**
-         * Calls {@link SteamToolUpgrade#onAttackWithTool(EntityPlayer, EntityLivingBase, DamageSource, ItemStack, ItemStack)}
+         * Calls {@link SteamToolUpgrade#onAttackWithTool(Player, LivingEntity, DamageSource, ItemStack, ItemStack)}
          * for every upgrade in the tool.
          */
         @SubscribeEvent
         public void onAttack(LivingAttackEvent event) {
             DamageSource dSource = event.getSource();
-            Entity source = dSource.getTrueSource();
-            if (!(source instanceof EntityPlayer)) {
+            Entity source = dSource.getEntity();
+            if (!(source instanceof Player player)) {
                 return;
             }
-            EntityPlayer player = (EntityPlayer) source;
-            ItemStack equipped = player.getHeldItemMainhand();
+            ItemStack equipped = player.getMainHandItem();
             if (!isToolOkay(equipped)) {
                 return;
             }
 
             for (ItemStack upgradeStack : UtilSteamTool.getUpgradeStacks(equipped)) {
                 SteamToolUpgrade upgrade = (SteamToolUpgrade) upgradeStack.getItem();
-                if (!upgrade.onAttackWithTool(player, event.getEntityLiving(), dSource, equipped, upgradeStack)) {
+                if (!upgrade.onAttackWithTool(player, event.getEntity(), dSource, equipped, upgradeStack)) {
                     event.setCanceled(true);
                     return;
                 }

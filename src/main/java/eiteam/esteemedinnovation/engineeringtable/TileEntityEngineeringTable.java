@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.engineeringtable;
 
 import eiteam.esteemedinnovation.api.Engineerable;
-import eiteam.esteemedinnovation.api.tile.TileEntityBase;
+import eiteam.esteemedinnovation.api.tile.BlockEntityBase;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -15,7 +15,7 @@ import javax.annotation.Nullable;
 
 import static net.minecraftforge.items.CapabilityItemHandler.ITEM_HANDLER_CAPABILITY;
 
-public class TileEntityEngineeringTable extends TileEntityBase {
+public class TileEntityEngineeringTable extends BlockEntityBase {
     private final IItemHandler engineerableItem = new ItemStackHandler(1) {
         private void setUpgradeSlotContents(int slot, ItemStack upgradeStack) {
             ItemStack mainStack = getStackInSlot(0);

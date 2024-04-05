@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.buzzsaw;
 
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.commons.util.OreDictHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -13,11 +13,12 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
 
-public class TileEntitySaw extends SteamTransporterTileEntity {
+public class TileEntitySaw extends SteamTransporterBlockEntity {
     private static final int CONSUMPTION = 10;
     private static final int PASSIVE_CONSUMPTION = 1;
     private static final int WINDUP_TICKS_MAX = 50;
@@ -30,7 +31,7 @@ public class TileEntitySaw extends SteamTransporterTileEntity {
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == BuzzsawModule.BUZZSAW;
     }
 
@@ -62,7 +63,7 @@ public class TileEntitySaw extends SteamTransporterTileEntity {
             }
         }
 
-        BlockPos woodPos = getOffsetPos(world.getBlockState(pos).getValue(BlockSaw.FACING));
+        BlockPos woodPos = getRelativePos(world.getBlockState(pos).getValue(BlockSaw.FACING));
         IBlockState woodState = world.getBlockState(woodPos);
         Block woodBlock = woodState.getBlock();
         Item woodItem = Item.getItemFromBlock(woodBlock);

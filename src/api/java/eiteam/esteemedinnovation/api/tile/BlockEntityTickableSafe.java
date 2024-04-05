@@ -1,35 +1,42 @@
 package eiteam.esteemedinnovation.api.tile;
 
 import eiteam.esteemedinnovation.api.wrench.PipeWrench;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ITickable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Base TileEntity class that ensures that no tick code is executed when the block in its occupied position is not
+ * Base BlockEntity class that ensures that no tick code is executed when the block in its occupied position is not
  * the expected one (usually, when this issue arises, it is air.)
  * <p>
- * It implements {@link ITickable}, but children of this class should implement {@link #safeUpdate()}, not {@link #update()}.
+ * You will still need to set up a ticker in your EntityBlock class. Use {@link BlockEntityTickableSafe#onTick(Level, BlockPos, BlockState, BlockEntityTickableSafe)}
+ * for your safe ticker.
  * <p>
- * This should only be necessary to use (as an alternative to {@link TileEntityBase} and ITickable explicitly) when you need to
+ * This should only be necessary to use (as an alternative to {@link BlockEntityBase} with a ticker) when you need to
  * access block state values within the update code.
  */
-public abstract class TileEntityTickableSafe extends TileEntityBase implements ITickable {
+public abstract class BlockEntityTickableSafe extends BlockEntityBase {
     private boolean isInitialized;
+
+    public BlockEntityTickableSafe(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+        super(type, pos, state);
+    }
 
     /**
      * @param target The block state that is in the position of this tile entity.
      * @return Whether we are safe to execute the ticking code for the provided block state.
      */
-    public abstract boolean canUpdate(IBlockState target);
+    public abstract boolean canUpdate(BlockState target);
 
     /**
-     * A safe variant of {@link ITickable#update()}. It is only executed when {@link #canUpdate(IBlockState)} is true.
+     * Called on every tick when {@link #canUpdate(BlockState)} is true.
      */
     public abstract void safeUpdate();
 
     /**
-     * Like {@link TileEntity#onLoad()}, except that it is safe (see {@link #safeUpdate()}) and happens after the world
+     * Like {@link BlockEntity#onLoad()}, except that it is safe (see {@link #safeUpdate()}) and happens after the world
      * has loaded. onLoad() occurs during the world loading process, so you cannot access any blockstate values or
      * anything of that sort. This is designed to be used for initialization stuff.
      * <p>
@@ -42,20 +49,20 @@ public abstract class TileEntityTickableSafe extends TileEntityBase implements I
      * just happens to also begin uninitialized. It truly is called whenever an update occurs and the TE is not
      * initialized (see {@link #isInitialized()}).
      * <p>
-     * For example, you might have a device that sets some value in the TE based on the block's facing value. The
+     * For example, you might have a device that sets some value in the BE based on the block's facing value. The
      * facing value probably won't change, so it doesn't make sense to retrieve that value every update. Using this,
      * you would store the value once, and then simply use it in {@link #safeUpdate()} when you need. However, if you
      * had some custom behavior utilizing a {@link PipeWrench} that would rotate the block, you would need to reset
-     * that value in the TE. You can do that by having a proxy method in the TE that calls {@link #setInitialized(boolean)}
+     * that value in the BE. You can do that by having a proxy method in the BE that calls {@link #setInitialized(boolean)}
      * (since that method is protected for security reasons; more on that later) so that the next update resets the
-     * value in the TE.
+     * value in the BE.
      * <p>
      * Here is a code sample for the scenario previously described:
      * <pre>
      * <code>
-     *     // SomeTileEntity.java
-     *     class SomeTileEntity extends TileEntityTickableSafe {
-     *         private EnumFacing facing;
+     *     // SomeBlockEntity.java
+     *     class SomeBlockEntity extends BlockEntityTickableSafe {
+     *         private Direction facing;
      *
      *         {@literal @}Override
      *         public void initialUpdate() {
@@ -66,7 +73,7 @@ public abstract class TileEntityTickableSafe extends TileEntityBase implements I
      *         {@literal @}Override
      *         public void safeUpdate() {
      *             // Destroys the block in the direction it is facing, for example.
-     *             world.destroyBlock(pos.offset(facing), true);
+     *             world.destroyBlock(pos.relative(facing), true);
      *         }
      *
      *         void uninitialize() {
@@ -75,18 +82,22 @@ public abstract class TileEntityTickableSafe extends TileEntityBase implements I
      *     }
      *
      *     // SomeBlock.java, in same package
-     *     class SomeBlock extends Block implements Wrenchable {
+     *     class SomeBlock extends BlockEntity implements Wrenchable {
      *         static final PropertyDirection FACING = BlockDirectional.FACING;
      *
-     *         // IBlockState implementations
+     *         // BlockState implementations
      *
      *         {@literal @}Override
-     *         public boolean onWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float hitX, float hitY, float hitZ) {
+     *         public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+     *             return type == MY_TYPE ? BlockEntityTickableSafe::onTick : null;
+     *
+     *         {@literal @}Override
+     *         public boolean onWrench(ItemStack stack, Player player, Level world, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float hitX, float hitY, float hitZ) {
      *             // Rotate the block
      *             world.setBlockState(pos, state.withProperty(FACING, state.getValue(FACING).rotateY()));
-     *             TileEntity te = world.getTileEntity(pos);
-     *             if (te instanceof SomeTileEntity) {
-     *                 // Uninitialize the tile entity since our facing value has changed.
+     *             TileEntity te = world.getBlockEntity(pos);
+     *             if (te instanceof SomeBlockEntity) {
+     *                 // Uninitialize the block entity since our facing value has changed.
      *                 ((SomeTileEntity) te).uninitialize();
      *             }
      *         }
@@ -106,13 +117,12 @@ public abstract class TileEntityTickableSafe extends TileEntityBase implements I
         return isInitialized;
     }
 
-    @Override
-    public void update() {
-        if (canUpdate(world.getBlockState(pos))) {
-            if (!isInitialized()) {
-                initialUpdate();
+    public static <T extends BlockEntityTickableSafe> void onTick(Level level, BlockPos blockPos, BlockState blockState, T t) {
+        if (t.canUpdate(level.getBlockState(t.getBlockPos()))) {
+            if (!t.isInitialized()) {
+                t.initialUpdate();
             }
-            safeUpdate();
+            t.safeUpdate();
         }
     }
 }

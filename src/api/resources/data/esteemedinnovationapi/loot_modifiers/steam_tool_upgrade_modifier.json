@@ -1,0 +1,11 @@
+{
+  "type": "esteemedinnovationapi:steam_tool_upgrade_modifier",
+  "conditions": [
+    {
+      "condition": "minecraft:match_tool",
+      "predicate": {
+        "tag": "esteemedinnovationapi:upgradeable_tools"
+      }
+    }
+  ]
+}

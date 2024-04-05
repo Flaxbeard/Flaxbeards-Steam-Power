@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.boiler;
 
 import eiteam.esteemedinnovation.api.block.DisguisableBlock;
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.api.util.FluidHelper;
 import eiteam.esteemedinnovation.api.wrench.Wrenchable;
 import eiteam.esteemedinnovation.commons.util.OreDictHelper;
@@ -9,6 +9,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -25,6 +26,10 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.fluids.FluidStack;
@@ -37,7 +42,7 @@ import net.minecraftforge.items.ItemStackHandler;
 
 import javax.annotation.Nonnull;
 
-public class TileEntityBoiler extends SteamTransporterTileEntity implements Wrenchable, DisguisableBlock {
+public class TileEntityBoiler extends SteamTransporterBlockEntity implements Wrenchable, DisguisableBlock {
     public ItemStackHandler inventory = new ItemStackHandler(2) {
         @Override
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
@@ -189,7 +194,7 @@ public class TileEntityBoiler extends SteamTransporterTileEntity implements Wren
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == BoilerModule.BOILER;
     }
 
@@ -325,18 +330,18 @@ public class TileEntityBoiler extends SteamTransporterTileEntity implements Wren
     }
 
     @Override
-    public boolean onWrench(@Nonnull ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float hitX, float hitY, float hitZ) {
+    public boolean onWrench(@Nonnull ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float hitX, float hitY, float hitZ) {
         if (player.isSneaking()) {
             Block disguiseBlock = getDisguiseBlock();
             if (disguiseBlock == null) {
                 return false;
             }
             if (!player.capabilities.isCreativeMode) {
-                EntityItem entityItem = new EntityItem(world, player.posX, player.posY, player.posZ, new ItemStack(disguiseBlock, 1, getDisguiseMeta()));
-                world.spawnEntity(entityItem);
+                EntityItem entityItem = new EntityItem(level, player.posX, player.posY, player.posZ, new ItemStack(disguiseBlock, 1, getDisguiseMeta()));
+                level.spawnEntity(entityItem);
             }
-            SoundType sound = disguiseBlock.getSoundType(null, world, pos, player);
-            world.playSound((pos.getX() + 0.5F), (pos.getY() + 0.5F),
+            SoundType sound = disguiseBlock.getSoundType(null, level, pos, player);
+            level.playSound((pos.getX() + 0.5F), (pos.getY() + 0.5F),
               (pos.getZ() + 0.5F), sound.getBreakSound(), SoundCategory.BLOCKS,
               (sound.getVolume() + 1F) / 2F, sound.getPitch() * 0.8F, false);
             setDisguiseBlock(null);

@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.charging;
 
 import eiteam.esteemedinnovation.api.SteamChargable;
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.armor.exosuit.steam.ItemSteamExosuitArmor;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.item.EntityItem;
@@ -14,8 +14,9 @@ import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class TileEntitySteamCharger extends SteamTransporterTileEntity implements IInventory {
+public class TileEntitySteamCharger extends SteamTransporterBlockEntity implements IInventory {
     public int randomDegrees;
     private boolean isCharging = false;
     private boolean hadItem = false;
@@ -74,7 +75,7 @@ public class TileEntitySteamCharger extends SteamTransporterTileEntity implement
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() == ChargingModule.STEAM_FILLER;
     }
 

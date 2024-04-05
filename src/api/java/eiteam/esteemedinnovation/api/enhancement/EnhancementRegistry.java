@@ -1,7 +1,7 @@
 package eiteam.esteemedinnovation.api.enhancement;
 
-import net.minecraft.item.Item;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;

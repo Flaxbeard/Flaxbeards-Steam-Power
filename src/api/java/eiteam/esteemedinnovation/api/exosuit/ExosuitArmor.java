@@ -1,14 +1,13 @@
 package eiteam.esteemedinnovation.api.exosuit;
 
 import eiteam.esteemedinnovation.api.Engineerable;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.common.ISpecialArmor;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 
-public interface ExosuitArmor extends ISpecialArmor, Engineerable {
+public interface ExosuitArmor extends Engineerable {
     /**
      * @return The string representing the location for the armor's item texture.
      */

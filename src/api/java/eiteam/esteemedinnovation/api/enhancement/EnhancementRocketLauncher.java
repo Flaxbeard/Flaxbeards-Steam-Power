@@ -1,10 +1,10 @@
 package eiteam.esteemedinnovation.api.enhancement;
 
 import eiteam.esteemedinnovation.api.entity.EntityRocket;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import javax.annotation.Nonnull;
 
@@ -27,10 +27,11 @@ public interface EnhancementRocketLauncher extends Enhancement {
     EntityRocket changeBullet(EntityRocket bullet);
 
     @Override
-    default void afterRoundFired(@Nonnull ItemStack weaponStack, World world, EntityPlayer player) {
-        if (player.capabilities.isFlying && !player.onGround && weaponStack.hasTagCompound()) {
-            int timeBetweenFire = weaponStack.getTagCompound().getInteger("fireDelay");
-            weaponStack.getTagCompound().setInteger("fireDelay", timeBetweenFire + getFireDelayChange(weaponStack));
+    default void afterRoundFired(@Nonnull ItemStack weaponStack, Level level, Player player) {
+        if (player.getAbilities().flying && !player.onGround() && weaponStack.hasTag()) {
+            // todo: Make constants for tag keys.
+            int timeBetweenFire = weaponStack.getTag().getInt("FireDelay");
+            weaponStack.getTag().putInt("FireDelay", timeBetweenFire + getFireDelayChange(weaponStack));
         }
     }
 }

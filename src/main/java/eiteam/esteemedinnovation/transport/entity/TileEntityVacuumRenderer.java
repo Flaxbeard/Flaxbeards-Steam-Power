@@ -16,7 +16,7 @@ public class TileEntityVacuumRenderer extends TileEntitySpecialRenderer<TileEnti
     public void render(TileEntityVacuum vacuum, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         GlStateManager.pushMatrix();
         GlStateManager.translate(x + 0.5, y + 0.5, z + 0.5);
-        EnumFacing dir = vacuum.getWorldObj().getBlockState(vacuum.getPos()).getValue(BlockVacuum.FACING);
+        EnumFacing dir = vacuum.getLevelObj().getBlockState(vacuum.getPos()).getValue(BlockVacuum.FACING);
         if (dir == EnumFacing.DOWN) {
             GlStateManager.rotate(-90F, 0, 0, 1);
         }

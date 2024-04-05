@@ -10,6 +10,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.fml.client.FMLClientHandler;
@@ -39,7 +40,7 @@ public class ItemDoubleJumpUpgrade extends ItemSteamExosuitUpgrade {
     }
 
     @Override
-    public boolean isInstalled(EntityLivingBase entity) {
+    public boolean isInstalled(LivingEntity entity) {
         ItemStack chest = entity.getItemStackFromSlot(EntityEquipmentSlot.CHEST);
         return super.isInstalled(entity) && chest.getItem() instanceof SteamChargable;
     }

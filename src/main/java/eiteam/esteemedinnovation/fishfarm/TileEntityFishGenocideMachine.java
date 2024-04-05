@@ -1,6 +1,6 @@
 package eiteam.esteemedinnovation.fishfarm;
 
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
@@ -9,6 +9,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.storage.loot.LootContext;
 import net.minecraft.world.storage.loot.LootTableList;
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,7 +17,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TileEntityFishGenocideMachine extends SteamTransporterTileEntity {
+public class TileEntityFishGenocideMachine extends SteamTransporterBlockEntity {
     public TileEntityFishGenocideMachine() {
         super(new EnumFacing[] {
           EnumFacing.UP,
@@ -45,7 +46,7 @@ public class TileEntityFishGenocideMachine extends SteamTransporterTileEntity {
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return false; // TODO
     }
 

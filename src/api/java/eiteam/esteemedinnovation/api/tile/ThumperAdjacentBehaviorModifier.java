@@ -1,8 +1,8 @@
 package eiteam.esteemedinnovation.api.tile;
 
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.core.Direction;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Collection;
 import java.util.List;
@@ -23,7 +23,7 @@ public interface ThumperAdjacentBehaviorModifier {
      * @param allBehaviorModifiers A list of all of the adjacent behavior modifiers for this Thumper, including this.
      * @param directionIn The direction from the Thumper that this behavior modifier was found in.
      */
-    void dropItems(SteamTransporterTileEntity thumper, List<ItemStack> drops, IBlockState state, Collection<ThumperAdjacentBehaviorModifier> allBehaviorModifiers, EnumFacing directionIn);
+    void dropItems(SteamTransporterBlockEntity thumper, List<ItemStack> drops, BlockState state, Collection<ThumperAdjacentBehaviorModifier> allBehaviorModifiers, Direction directionIn);
 
     /**
      * Called to ensure that this behavior modifier is actually valid. Use this to make sure that it is configured properly.
@@ -31,5 +31,5 @@ public interface ThumperAdjacentBehaviorModifier {
      * @param directionIn {@inheritDoc}
      * @return Whether this behavior modifier can be used to modify Thumper behavior.
      */
-    boolean isValidBehaviorModifier(SteamTransporterTileEntity thumper, EnumFacing directionIn);
+    boolean isValidBehaviorModifier(SteamTransporterBlockEntity thumper, Direction directionIn);
 }

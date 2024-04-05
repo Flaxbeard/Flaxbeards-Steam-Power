@@ -2,10 +2,11 @@ package eiteam.esteemedinnovation.api;
 
 import eiteam.esteemedinnovation.api.steamnet.SteamNetwork;
 import eiteam.esteemedinnovation.api.util.Coord4;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.world.World;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 
-import java.util.HashSet;
+import java.util.Set;
 
 public interface SteamTransporter {
 
@@ -48,11 +49,11 @@ public interface SteamTransporter {
      * @param amount How much steam can be inserted per
      * @param face The side of the device
      */
-    void insertSteam(int amount, EnumFacing face);
+    void insertSteam(int amount, Direction face);
 
     void decrSteam(int i);
 
-    boolean doesConnect(EnumFacing face);
+    boolean doesConnect(Direction face);
 
     /**
      * Called to ensure that the device can have a steam gauge put on it to check how much steam it has
@@ -61,11 +62,11 @@ public interface SteamTransporter {
      *
      * @return true if steam gauges can be put on it
      */
-    boolean acceptsGauge(EnumFacing face);
+    boolean acceptsGauge(Direction face);
 
-    HashSet<EnumFacing> getConnectionSides();
+    Set<Direction> getConnectionSides();
 
-    World getWorldObj();
+    Level getLevelObj();
 
     void setNetworkName(String name);
 
@@ -77,7 +78,7 @@ public interface SteamTransporter {
 
     Coord4 getCoords();
 
-    int getDimension();
+    ResourceLocation getDimension();
 
     int getSteam();
 

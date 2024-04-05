@@ -20,7 +20,7 @@ public class TileEntityValvePipeRenderer extends TileEntitySpecialRenderer<TileE
     public void render(TileEntityValvePipe valve, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         GlStateManager.pushMatrix();
         GlStateManager.translate(x, y, z);
-        World world = valve.getWorldObj();
+        World world = valve.getLevelObj();
         BlockPos pos = valve.getPos();
         IBlockState state = world.getBlockState(pos);
         EnumFacing facing = state.getValue(BlockValvePipe.FACING);

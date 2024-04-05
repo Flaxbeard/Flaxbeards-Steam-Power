@@ -1,12 +1,12 @@
 package eiteam.esteemedinnovation.api.wrench;
 
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nonnull;
 
@@ -16,17 +16,18 @@ import javax.annotation.Nonnull;
 public interface Wrenchable {
     /**
      * Called when a player uses a wrench on a tile entity.
-     * @param stack The ItemStack wrench
+     *
+     * @param stack  The ItemStack wrench
      * @param player The player
-     * @param world The world
-     * @param pos The block position
-     * @param hand The hand being used
+     * @param level  The world
+     * @param pos    The block position
+     * @param hand   The hand being used
      * @param facing The side of the block hit
-     * @param state The current blockstate.
-     * @param hitX See Item#onItemUseFirst
-     * @param hitY See Item#onItemUseFirst
-     * @param hitZ See Item#onItemUseFirst
+     * @param state  The current blockstate.
+     * @param hitX   See Item#onItemUseFirst
+     * @param hitY   See Item#onItemUseFirst
+     * @param hitZ   See Item#onItemUseFirst
      * @return Whether it was successful
      */
-    boolean onWrench(@Nonnull ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float hitX, float hitY, float hitZ);
+    boolean onWrench(@Nonnull ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float hitX, float hitY, float hitZ);
 }

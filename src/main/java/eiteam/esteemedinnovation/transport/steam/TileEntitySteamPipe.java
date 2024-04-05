@@ -5,13 +5,14 @@ import codechicken.lib.raytracer.RayTracer;
 import codechicken.lib.vec.Cuboid6;
 import eiteam.esteemedinnovation.api.SteamTransporter;
 import eiteam.esteemedinnovation.api.steamnet.SteamNetwork;
-import eiteam.esteemedinnovation.api.tile.SteamTransporterTileEntity;
+import eiteam.esteemedinnovation.api.tile.SteamTransporterBlockEntity;
 import eiteam.esteemedinnovation.api.wrench.Wrenchable;
 import eiteam.esteemedinnovation.commons.EsteemedInnovation;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.properties.PropertyBool;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.core.Direction;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -26,13 +27,14 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
-public class TileEntitySteamPipe extends SteamTransporterTileEntity implements Wrenchable {
+public class TileEntitySteamPipe extends SteamTransporterBlockEntity implements Wrenchable {
     //protected FluidTank dummyFluidTank = FluidRegistry.isFluidRegistered("steam") ? new FluidTank(new FluidStack(FluidRegistry.getFluid("steam"), 0),10000) : null;
     public ArrayList<Integer> blacklistedSides = new ArrayList<>();
     public Block disguiseBlock = null;
@@ -138,7 +140,7 @@ public class TileEntitySteamPipe extends SteamTransporterTileEntity implements W
     public ArrayList<EnumFacing> getMyDirections() {
         ArrayList<EnumFacing> myDirections = new ArrayList<>();
         for (EnumFacing direction : getConnectionSides()) {
-            TileEntity tile = world.getTileEntity(getOffsetPos(direction));
+            TileEntity tile = world.getTileEntity(getRelativePos(direction));
             if (tile instanceof SteamTransporter) {
                 SteamTransporter target = (SteamTransporter) tile;
                 if (target.doesConnect(direction.getOpposite())) {
@@ -197,13 +199,13 @@ public class TileEntitySteamPipe extends SteamTransporterTileEntity implements W
      * @return Whether it can leak.
      */
     public boolean canLeak(EnumFacing direction) {
-        BlockPos dirPos = getOffsetPos(direction);
+        BlockPos dirPos = getRelativePos(direction);
         return (getSteamShare() > 0 && (world.isAirBlock(dirPos) ||
           !world.isSideSolid(dirPos, direction.getOpposite())));
     }
 
     @Override
-    public boolean canUpdate(IBlockState target) {
+    public boolean canUpdate(BlockState target) {
         return target.getBlock() instanceof BlockSteamPipe;
     }
 
@@ -224,7 +226,7 @@ public class TileEntitySteamPipe extends SteamTransporterTileEntity implements W
     }
 
     @Override
-    public HashSet<EnumFacing> getConnectionSides() {
+    public Set<Direction> getConnectionSides() {
         HashSet<EnumFacing> out = new HashSet<>();
         HashSet<EnumFacing> blacklist = new HashSet<>();
         for (int i : blacklistedSides) {
@@ -240,7 +242,7 @@ public class TileEntitySteamPipe extends SteamTransporterTileEntity implements W
     }
 
     @Override
-    public boolean doesConnect(EnumFacing face) {
+    public boolean doesConnect(Direction face) {
         for (int i : blacklistedSides) {
             if (EnumFacing.VALUES[i] == face) {
                 return false;
@@ -268,7 +270,7 @@ public class TileEntitySteamPipe extends SteamTransporterTileEntity implements W
      * @return 0 if it cannot connect. 2 if it can connect to another pipe. 1 if it can connect, but not to another pipe.
      */
     public int canConnectSide(EnumFacing direction) {
-        BlockPos pos = getOffsetPos(direction);
+        BlockPos pos = getRelativePos(direction);
         TileEntity tile = world.getTileEntity(pos);
         if (tile != null && tile instanceof SteamTransporter) {
             SteamTransporter target = (SteamTransporter) tile;
@@ -369,15 +371,15 @@ public class TileEntitySteamPipe extends SteamTransporterTileEntity implements W
     }
 
     @Override
-    public boolean onWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, IBlockState state, float hitX, float hitY, float hitZ) {
+    public boolean onWrench(ItemStack stack, Player player, Level level, BlockPos pos, HumanoidArm hand, Direction facing, BlockState state, float hitX, float hitY, float hitZ) {
         if (player.isSneaking()) {
             if (this.disguiseBlock != null) {
                 if (!player.capabilities.isCreativeMode) {
-                    EntityItem entityItem = new EntityItem(world, player.posX, player.posY, player.posZ, new ItemStack(disguiseBlock, 1, disguiseMeta));
-                    world.spawnEntity(entityItem);
+                    EntityItem entityItem = new EntityItem(level, player.posX, player.posY, player.posZ, new ItemStack(disguiseBlock, 1, disguiseMeta));
+                    level.spawnEntity(entityItem);
                 }
                 SoundType sound = disguiseBlock.getSoundType();
-                world.playSound((double) pos.getX() + 0.5F, (double) (pos.getY() + 0.5F),
+                level.playSound((double) pos.getX() + 0.5F, (double) (pos.getY() + 0.5F),
                   (double) (pos.getZ() + 0.5F), sound.getBreakSound(), SoundCategory.BLOCKS,
                   (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F, false);
                 disguiseBlock = null;
@@ -386,7 +388,7 @@ public class TileEntitySteamPipe extends SteamTransporterTileEntity implements W
             }
         } else {
             if (this.world.isRemote) {
-                RayTraceResult hit = RayTracer.retraceBlock(world, player, pos);
+                RayTraceResult hit = RayTracer.retraceBlock(level, player, pos);
                 // Use ryatracer to get the subpart that was hit. The # corresponds with a forge direction.
                 if (hit == null) {
                     return false;
@@ -416,7 +418,7 @@ public class TileEntitySteamPipe extends SteamTransporterTileEntity implements W
             //If does connect on this side, and has adequate sides left
             EnumFacing direction = EnumFacing.byIndex(subHit);
             if (doesConnect(direction)) {
-                BlockPos offsetPos = getOffsetPos(direction);
+                BlockPos offsetPos = getRelativePos(direction);
                 TileEntity tile = world.getTileEntity(offsetPos);
                 if (tile instanceof TileEntitySteamPipe && ((TileEntitySteamPipe) tile).blacklistedSides.contains(direction.getOpposite().ordinal())) {
                     TileEntitySteamPipe pipe = (TileEntitySteamPipe) tile;
@@ -484,7 +486,7 @@ public class TileEntitySteamPipe extends SteamTransporterTileEntity implements W
     private void refreshNeighbors() {
         //log.debug("Refreshing neighbors");
         for (EnumFacing dir : EnumFacing.VALUES) {
-            TileEntity te = world.getTileEntity(getOffsetPos(dir));
+            TileEntity te = world.getTileEntity(getRelativePos(dir));
             if (te != null && te instanceof SteamTransporter) {
                 SteamTransporter trans = (SteamTransporter) te;
                 SteamNetwork transNetwork = trans.getNetwork();
